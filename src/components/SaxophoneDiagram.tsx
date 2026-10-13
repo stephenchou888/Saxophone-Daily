@@ -109,11 +109,11 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
     [isMuted, onKeyClick, playSaxKeyAction, register, saxType, soundMode]
   );
 
-  // Real instrument photo URLs
+  // Real instrument photo URLs (supports GitHub Pages and custom base URL)
   const realPhotoSrc =
     saxType === 'alto'
-      ? '/images/alto_saxophone_real.png'
-      : '/images/soprano_saxophone_real.jpg';
+      ? `${import.meta.env.BASE_URL}images/alto_saxophone_real.png`
+      : `${import.meta.env.BASE_URL}images/soprano_saxophone_real.jpg`;
 
   const realInstrumentTitle =
     saxType === 'alto'
