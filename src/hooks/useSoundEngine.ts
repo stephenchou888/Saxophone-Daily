@@ -1,21 +1,293 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { SaxophoneType } from '../types/music';
 
-// Primary natural frequency for individual saxophone keys when pressed
-export const KEY_PITCH_MAP: Record<string, { freq: number; label: string }> = {
-  key_octave: { freq: 880.00, label: '八度高音气孔 (泛音)' },
-  key_lh1:    { freq: 493.88, label: 'B4 (左手1号音孔)' },
-  key_lh2:    { freq: 440.00, label: 'A4 (左手2号音孔)' },
-  key_lh3:    { freq: 392.00, label: 'G4 (左手3号音孔)' },
-  key_lh_gis: { freq: 415.30, label: 'G#4 (小指翘板侧键)' },
-  key_lh_cis: { freq: 277.18, label: 'C#4 (低音变音孔)' },
-  key_lh_low_b:{ freq: 246.94, label: 'B3 (低音共鸣大键)' },
-  key_rh1:    { freq: 349.23, label: 'F4 (右手4号音孔)' },
-  key_rh2:    { freq: 329.63, label: 'E4 (右手5号音孔)' },
-  key_rh3:    { freq: 293.66, label: 'D4 (右手6号音孔)' },
-  key_rh_eb:  { freq: 311.13, label: 'Eb4 (右手小指Eb滚轮)' },
-  key_rh_c:   { freq: 261.63, label: 'C4 (右手小指低音C)' },
+export type SaxRegister = 'low' | 'high' | 'altissimo';
+
+export interface KeyPitchDefinition {
+  lowFreq: number;       // 低/中八度记谱基频 (Written Pitch Hz)
+  highFreq: number;      // 高八度记谱基频 (+8ve Written Pitch Hz)
+  altissimoFreq: number; // 超吹记谱频率 (Altissimo Written Pitch Hz)
+  label: string;         // 按键全称与位置
+  shortName: string;     // 简短标签，如 4(F), 侧C
+  hand: 'right' | 'left' | 'thumb'; // 手位
+  category: 'stack' | 'side' | 'palm' | 'table' | 'octave' | 'altissimo';
+  writtenNoteLow: string;
+  writtenNoteHigh: string;
+  writtenNoteAlt: string;
+}
+
+// 严谨对应真实萨克斯管乐物理按键声学与指法频率映射表 (全按键严密涵盖右手群、左手群、掌键群与侧键群)
+export const KEY_PITCH_MAP: Record<string, KeyPitchDefinition> = {
+  // ===================== 右手按键群 (右侧核心按键) =====================
+  key_rh1: {
+    lowFreq: 349.23, // F4
+    highFreq: 698.46, // F5
+    altissimoFreq: 1396.91, // F6
+    label: '右手4号键 (F音孔 · 右手食指)',
+    shortName: '4(F)',
+    hand: 'right',
+    category: 'stack',
+    writtenNoteLow: 'F4',
+    writtenNoteHigh: 'F5',
+    writtenNoteAlt: 'F6',
+  },
+  key_rh2: {
+    lowFreq: 329.63, // E4
+    highFreq: 659.25, // E5
+    altissimoFreq: 1318.51, // E6
+    label: '右手5号键 (E音孔 · 右手中指)',
+    shortName: '5(E)',
+    hand: 'right',
+    category: 'stack',
+    writtenNoteLow: 'E4',
+    writtenNoteHigh: 'E5',
+    writtenNoteAlt: 'E6',
+  },
+  key_rh3: {
+    lowFreq: 293.66, // D4
+    highFreq: 587.33, // D5
+    altissimoFreq: 1174.66, // D6
+    label: '右手6号键 (D音孔 · 右手无名指)',
+    shortName: '6(D)',
+    hand: 'right',
+    category: 'stack',
+    writtenNoteLow: 'D4',
+    writtenNoteHigh: 'D5',
+    writtenNoteAlt: 'D6',
+  },
+  key_side_c: {
+    lowFreq: 523.25, // C5
+    highFreq: 1046.50, // C6
+    altissimoFreq: 1567.98, // G6泛音辅助
+    label: '右手侧C键 (高音泛音辅助 · 右手侧键)',
+    shortName: '侧C',
+    hand: 'right',
+    category: 'side',
+    writtenNoteLow: 'C5',
+    writtenNoteHigh: 'C6',
+    writtenNoteAlt: 'G6(泛音)',
+  },
+  key_side_bb: {
+    lowFreq: 466.16, // Bb4
+    highFreq: 932.33, // Bb5
+    altissimoFreq: 1864.66, // 超吹Bb6
+    label: '右手侧Bb键 (1+1侧辅助 · 右手侧键)',
+    shortName: '侧Bb',
+    hand: 'right',
+    category: 'side',
+    writtenNoteLow: 'Bb4',
+    writtenNoteHigh: 'Bb5',
+    writtenNoteAlt: 'Bb6(泛音)',
+  },
+  key_high_fis: {
+    lowFreq: 739.99, // F#5
+    highFreq: 1479.98, // F#6
+    altissimoFreq: 1479.98, // F#6
+    label: '右手高音F#键 (现代高音F#侧键)',
+    shortName: '高F#',
+    hand: 'right',
+    category: 'side',
+    writtenNoteLow: 'F#5',
+    writtenNoteHigh: 'F#6',
+    writtenNoteAlt: 'F#6',
+  },
+  key_rh_eb: {
+    lowFreq: 311.13, // Eb4
+    highFreq: 622.25, // Eb5
+    altissimoFreq: 1244.51, // Eb6
+    label: '右手低音Eb键 (右手小指上滚轮)',
+    shortName: 'Eb',
+    hand: 'right',
+    category: 'table',
+    writtenNoteLow: 'Eb4',
+    writtenNoteHigh: 'Eb5',
+    writtenNoteAlt: 'Eb6',
+  },
+  key_rh_c: {
+    lowFreq: 261.63, // C4
+    highFreq: 523.25, // C5
+    altissimoFreq: 1046.50, // C6
+    label: '右手低音C键 (右手小指下底板)',
+    shortName: '低音C',
+    hand: 'right',
+    category: 'table',
+    writtenNoteLow: 'C4',
+    writtenNoteHigh: 'C5',
+    writtenNoteAlt: 'C6',
+  },
+
+  // ===================== 左手主按键群 =====================
+  key_lh1: {
+    lowFreq: 493.88, // B4
+    highFreq: 987.77, // B5
+    altissimoFreq: 1975.53, // B6
+    label: '左手1号键 (B音孔 · 左手食指)',
+    shortName: '1(B)',
+    hand: 'left',
+    category: 'stack',
+    writtenNoteLow: 'B4',
+    writtenNoteHigh: 'B5',
+    writtenNoteAlt: 'B6',
+  },
+  key_lh2: {
+    lowFreq: 440.00, // A4
+    highFreq: 880.00, // A5
+    altissimoFreq: 1760.00, // A6
+    label: '左手2号键 (A音孔 · 左手中指)',
+    shortName: '2(A)',
+    hand: 'left',
+    category: 'stack',
+    writtenNoteLow: 'A4',
+    writtenNoteHigh: 'A5',
+    writtenNoteAlt: 'A6',
+  },
+  key_lh3: {
+    lowFreq: 392.00, // G4
+    highFreq: 783.99, // G5
+    altissimoFreq: 1661.22, // G#6/G6
+    label: '左手3号键 (G音孔 · 左手无名指)',
+    shortName: '3(G)',
+    hand: 'left',
+    category: 'stack',
+    writtenNoteLow: 'G4',
+    writtenNoteHigh: 'G5',
+    writtenNoteAlt: 'G#6',
+  },
+
+  // ===================== 左手小指变音台 (Spatula Table) =====================
+  key_lh_gis: {
+    lowFreq: 415.30, // G#4
+    highFreq: 830.61, // G#5
+    altissimoFreq: 1661.22, // G#6
+    label: '左手G#侧翘板 (左手小指上翘板)',
+    shortName: 'G#',
+    hand: 'left',
+    category: 'table',
+    writtenNoteLow: 'G#4',
+    writtenNoteHigh: 'G#5',
+    writtenNoteAlt: 'G#6',
+  },
+  key_lh_cis: {
+    lowFreq: 277.18, // C#4
+    highFreq: 554.37, // C#5
+    altissimoFreq: 1108.73, // C#6
+    label: '左手低音C#键 (左手小指内侧板)',
+    shortName: 'C#',
+    hand: 'left',
+    category: 'table',
+    writtenNoteLow: 'C#4',
+    writtenNoteHigh: 'C#5',
+    writtenNoteAlt: 'C#6',
+  },
+  key_lh_low_b: {
+    lowFreq: 246.94, // B3
+    highFreq: 493.88, // B4
+    altissimoFreq: 987.77, // B5
+    label: '左手低音B键 (钟口共鸣大键)',
+    shortName: '低音B',
+    hand: 'left',
+    category: 'table',
+    writtenNoteLow: 'B3',
+    writtenNoteHigh: 'B4',
+    writtenNoteAlt: 'B5',
+  },
+  key_lh_low_bb: {
+    lowFreq: 233.08, // Bb3
+    highFreq: 466.16, // Bb4
+    altissimoFreq: 932.33, // Bb5
+    label: '左手最低音Bb键 (全管长闭合极限底音)',
+    shortName: '低音Bb',
+    hand: 'left',
+    category: 'table',
+    writtenNoteLow: 'Bb3',
+    writtenNoteHigh: 'Bb4',
+    writtenNoteAlt: 'Bb5',
+  },
+
+  // ===================== 左手高音掌键群 (Palm Keys) =====================
+  key_palm_d: {
+    lowFreq: 587.33, // D5
+    highFreq: 1174.66, // D6
+    altissimoFreq: 1174.66, // D6
+    label: '左手掌键 D (高音掌键D6)',
+    shortName: '掌D',
+    hand: 'left',
+    category: 'palm',
+    writtenNoteLow: 'D5',
+    writtenNoteHigh: 'D6',
+    writtenNoteAlt: 'D6',
+  },
+  key_palm_eb: {
+    lowFreq: 622.25, // Eb5
+    highFreq: 1244.51, // Eb6
+    altissimoFreq: 1244.51, // Eb6
+    label: '左手掌键 Eb (高音掌键Eb6)',
+    shortName: '掌Eb',
+    hand: 'left',
+    category: 'palm',
+    writtenNoteLow: 'Eb5',
+    writtenNoteHigh: 'Eb6',
+    writtenNoteAlt: 'Eb6',
+  },
+  key_palm_f: {
+    lowFreq: 698.46, // F5
+    highFreq: 1396.91, // F6
+    altissimoFreq: 1396.91, // F6
+    label: '左手掌键 F (高音掌键F6)',
+    shortName: '掌F',
+    hand: 'left',
+    category: 'palm',
+    writtenNoteLow: 'F5',
+    writtenNoteHigh: 'F6',
+    writtenNoteAlt: 'F6',
+  },
+
+  // ===================== 八度键与超吹核心键 =====================
+  key_octave: {
+    lowFreq: 440.00,
+    highFreq: 880.00,
+    altissimoFreq: 1760.00,
+    label: '八度高音泛音孔 (左手大拇指按压)',
+    shortName: '8度键',
+    hand: 'thumb',
+    category: 'octave',
+    writtenNoteLow: 'A4',
+    writtenNoteHigh: 'A5(+8ve)',
+    writtenNoteAlt: 'A6(泛音)',
+  },
+  key_front_f: {
+    lowFreq: 698.46,
+    highFreq: 1396.91,
+    altissimoFreq: 1567.98, // G6 超吹
+    label: '前高音F叉键 (超吹核心指法键)',
+    shortName: '前F',
+    hand: 'left',
+    category: 'altissimo',
+    writtenNoteLow: 'F5',
+    writtenNoteHigh: 'F6',
+    writtenNoteAlt: 'Altissimo G6',
+  },
 };
+
+// 调性转换与实音计算辅助工具
+export function getSaxSoundingPitch(writtenFreq: number, saxType: SaxophoneType): {
+  concertFreq: number;
+  noteName: string;
+} {
+  // Alto (Eb): sounds a major 6th lower (-9 semitones)
+  // Soprano (Bb): sounds a major 2nd lower (-2 semitones)
+  const shift = saxType === 'alto' ? -9 : -2;
+  const concertFreq = writtenFreq * Math.pow(2, shift / 12);
+
+  // Note names mapping from frequency (A4 = 440Hz base)
+  const noteNames = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+  const midi = Math.round(69 + 12 * Math.log2(concertFreq / 440));
+  const noteIndex = ((midi % 12) + 12) % 12;
+  const octave = Math.floor(midi / 12) - 1;
+  const noteName = `${noteNames[noteIndex]}${octave}`;
+
+  return { concertFreq: Math.round(concertFreq * 100) / 100, noteName };
+}
 
 export function useSoundEngine() {
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -68,11 +340,7 @@ export function useSoundEngine() {
   }, [getAudioContext]);
 
   /**
-   * 细致化真实真琴机械音垫与连杆按键音效 (Saxophone Mechanical Leather Pad & Keywork Sound)
-   * 模拟真实萨克斯：
-   * 1. 羊皮/牛皮密封垫压合黄铜音孔时的柔和低频冲击沉闷声 (Tone-hole Thud)
-   * 2. 皮垫触碰音孔边缘的气流与微声 (Leather Cushion Pop)
-   * 3. 镀镍不锈钢连杆轴与蓝钢针簧的清脆金属咬合音 (Keywork Needle Spring Tick)
+   * 细致化真琴机械皮垫闭合音效 (Saxophone Mechanical Leather Pad & Keywork Sound)
    */
   const playKeyPadClick = useCallback(
     (keyId?: string) => {
@@ -82,35 +350,45 @@ export function useSoundEngine() {
 
         const now = ctx.currentTime;
 
-        // 根据按键位置调整物理腔体共鸣基础频率（下把位/大音孔按键更沉，上把位更脆）
+        // 根据按键物理位置调整皮垫气腔共鸣频响
         let basePitch = 180;
-        if (keyId?.includes('rh_c') || keyId?.includes('low_b') || keyId?.includes('rh_eb')) {
-          basePitch = 135; // 低音区，大管体低频共鸣沉闷
-        } else if (keyId?.includes('octave') || keyId?.includes('lh1')) {
-          basePitch = 230; // 高音小音孔，清脆微弹
+        if (
+          keyId?.includes('rh_c') ||
+          keyId?.includes('low_b') ||
+          keyId?.includes('rh_eb') ||
+          keyId?.includes('low_bb')
+        ) {
+          basePitch = 120; // 低音区与大喇叭口，沉重厚实的皮革压合声
+        } else if (
+          keyId?.includes('octave') ||
+          keyId?.includes('palm') ||
+          keyId?.includes('front_f') ||
+          keyId?.includes('side')
+        ) {
+          basePitch = 280; // 侧键与八度掌键，轻灵利落的连杆金属声
         }
 
-        // 1. 柔韧皮垫按合音孔的低频气穴沉音 (Leather Pad Air Cavity Thud)
+        // 1. 柔韧皮垫按合音孔的低频气穴沉音
         const thudOsc = ctx.createOscillator();
         const thudGain = ctx.createGain();
         thudOsc.type = 'triangle';
         thudOsc.frequency.setValueAtTime(basePitch, now);
-        thudOsc.frequency.exponentialRampToValueAtTime(45, now + 0.035);
+        thudOsc.frequency.exponentialRampToValueAtTime(40, now + 0.038);
 
         thudGain.gain.setValueAtTime(0.24, now);
-        thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+        thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.038);
 
         thudOsc.connect(thudGain);
         thudGain.connect(ctx.destination);
         thudOsc.start(now);
-        thudOsc.stop(now + 0.038);
+        thudOsc.stop(now + 0.04);
 
-        // 2. 音孔皮革撞击瞬态噪声 (Leather Slap Transient)
-        const noiseBufferSize = Math.floor(ctx.sampleRate * 0.02); // 20ms
+        // 2. 音孔皮革撞击瞬态噪声
+        const noiseBufferSize = Math.floor(ctx.sampleRate * 0.022);
         const noiseBuffer = ctx.createBuffer(1, noiseBufferSize, ctx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
         for (let i = 0; i < noiseBufferSize; i++) {
-          output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noiseBufferSize * 0.25));
+          output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noiseBufferSize * 0.28));
         }
 
         const noiseSource = ctx.createBufferSource();
@@ -118,26 +396,26 @@ export function useSoundEngine() {
 
         const noiseFilter = ctx.createBiquadFilter();
         noiseFilter.type = 'bandpass';
-        noiseFilter.frequency.setValueAtTime(1400, now);
-        noiseFilter.Q.setValueAtTime(2.5, now);
+        noiseFilter.frequency.setValueAtTime(1450, now);
+        noiseFilter.Q.setValueAtTime(2.2, now);
 
         const noiseGain = ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.18, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+        noiseGain.gain.setValueAtTime(0.16, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.022);
 
         noiseSource.connect(noiseFilter);
         noiseFilter.connect(noiseGain);
         noiseGain.connect(ctx.destination);
         noiseSource.start(now);
 
-        // 3. 蓝钢弹簧与金属按键杠杆轴轻脆卡嗒声 (Needle Spring & Brass Keywork Click)
+        // 3. 蓝钢弹簧与连杆机械轴轻脆卡嗒声 (Click)
         const tickOsc = ctx.createOscillator();
         const tickGain = ctx.createGain();
         tickOsc.type = 'sine';
-        tickOsc.frequency.setValueAtTime(3200, now);
-        tickOsc.frequency.exponentialRampToValueAtTime(1200, now + 0.008);
+        tickOsc.frequency.setValueAtTime(3400, now);
+        tickOsc.frequency.exponentialRampToValueAtTime(1100, now + 0.008);
 
-        tickGain.gain.setValueAtTime(0.08, now);
+        tickGain.gain.setValueAtTime(0.07, now);
         tickGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.008);
 
         tickOsc.connect(tickGain);
@@ -152,61 +430,98 @@ export function useSoundEngine() {
   );
 
   /**
-   * 真实萨克斯管乐音色合成 (Acoustic Saxophone Synthesis)
-   * 采用黄铜锥形管声学模型：锯齿波簧片激励 + 偶次谐波共振 + 喉腔共鸣带通滤波 + 微妙呼吸气流 + 揉弦
+   * 真实萨克斯管乐音色合成 (严谨区分 中音 Alto Eb 与 高音 Soprano Bb，并支持低八度、高八度与超吹)
    */
   const playTone = useCallback(
-    (writtenFreq: number, saxType: SaxophoneType, duration = 0.5) => {
+    (
+      writtenFreq: number,
+      saxType: SaxophoneType,
+      duration = 0.5,
+      register: SaxRegister = 'low'
+    ) => {
       try {
         const ctx = getAudioContext();
         if (!ctx) return;
 
-        // Alto (Eb): sounds a major 6th lower (-9 semitones)
-        // Soprano (Bb): sounds a major 2nd lower (-2 semitones)
+        // 严谨移调：
+        // 中音 (Alto in Eb): 记谱音向下小三度再下一八度 = 大六度 (低 9 个半音)
+        // 高音 (Soprano in Bb): 记谱音向下大二度 (低 2 个半音)
         const semitoneShift = saxType === 'alto' ? -9 : -2;
         const actualFreq = writtenFreq * Math.pow(2, semitoneShift / 12);
+
         const now = ctx.currentTime;
 
-        // 主振荡器：锯齿波模拟单簧片周期振动
+        // 1. 主振荡器：单簧片周期振动 (Sawtooth 单簧片锯齿波波形)
         const reedOsc = ctx.createOscillator();
         reedOsc.type = 'sawtooth';
         reedOsc.frequency.setValueAtTime(actualFreq, now);
 
-        // 次振荡器：三角波提供萨克斯管身下部饱满的圆润基频 (Body fundamental)
+        // 2. 次振荡器：管身基频共鸣 (Triangle / Sine)
         const subOsc = ctx.createOscillator();
-        subOsc.type = 'triangle';
-        subOsc.frequency.setValueAtTime(actualFreq, now);
+        subOsc.type = register === 'altissimo' ? 'sine' : 'triangle';
+        subOsc.frequency.setValueAtTime(
+          register === 'altissimo' ? actualFreq * 1.5 : actualFreq,
+          now
+        );
 
-        // 高次泛音器：微弱方波模拟笛头哨片咬合的高频脆响 (Overtones)
+        // 3. 高次泛音器 (模拟哨片咬合高频脆响与超吹裂帛穿透力)
         const highOsc = ctx.createOscillator();
-        highOsc.type = 'square';
+        highOsc.type = register === 'altissimo' ? 'sawtooth' : 'square';
         highOsc.frequency.setValueAtTime(actualFreq * 2, now);
 
         // 柔和微揉弦 LFO (Vibrato)
         const vibrato = ctx.createOscillator();
         const vibratoGain = ctx.createGain();
-        vibrato.frequency.setValueAtTime(5.3, now); // 5.3 Hz natural vibrato
+        // 高音萨克斯颤音略快略灵动，中音稍宽厚
+        const vibRate = saxType === 'soprano' ? 5.8 : register === 'altissimo' ? 6.2 : 5.0;
+        vibrato.frequency.setValueAtTime(vibRate, now);
         vibratoGain.gain.setValueAtTime(0, now);
-        // 80ms 延时切入自然揉弦
-        vibratoGain.gain.linearRampToValueAtTime(actualFreq * 0.008, now + 0.18);
+        vibratoGain.gain.linearRampToValueAtTime(
+          actualFreq * (register === 'altissimo' ? 0.012 : 0.007),
+          now + 0.14
+        );
         vibrato.connect(reedOsc.frequency);
         vibrato.start(now);
         vibrato.stop(now + duration);
 
-        // 萨克斯喉腔特征共鸣滤波 (Formant Filter, ~650Hz)
+        // 萨克斯管体共鸣带通滤波 (Formant Filter)
         const formantFilter = ctx.createBiquadFilter();
         formantFilter.type = 'bandpass';
-        formantFilter.frequency.setValueAtTime(saxType === 'alto' ? 620 : 750, now);
-        formantFilter.Q.setValueAtTime(1.8, now);
+        let formantCenter = saxType === 'alto' ? 620 : 820;
+        if (register === 'high') formantCenter = saxType === 'alto' ? 1200 : 1450;
+        if (register === 'altissimo') formantCenter = saxType === 'alto' ? 2400 : 2850;
+        formantFilter.frequency.setValueAtTime(formantCenter, now);
+        formantFilter.Q.setValueAtTime(register === 'altissimo' ? 3.6 : 1.9, now);
 
-        // 管体低通温润滤波 (~1900Hz)
+        // 管体低通滤波 (Body Lowpass Filter)
         const bodyFilter = ctx.createBiquadFilter();
         bodyFilter.type = 'lowpass';
-        bodyFilter.frequency.setValueAtTime(saxType === 'alto' ? 1800 : 2100, now);
+        const cutoff =
+          register === 'altissimo'
+            ? saxType === 'soprano' ? 5200 : 4500
+            : register === 'high'
+            ? saxType === 'soprano' ? 3600 : 3100
+            : saxType === 'soprano' ? 2400 : 1950;
+        bodyFilter.frequency.setValueAtTime(cutoff, now);
         bodyFilter.Q.setValueAtTime(2.2, now);
 
+        // 超吹特有高频尖锐爆破峰 (Altissimo Bite Filter)
+        let altissimoGain: GainNode | null = null;
+        if (register === 'altissimo') {
+          const biteOsc = ctx.createOscillator();
+          biteOsc.type = 'sawtooth';
+          biteOsc.frequency.setValueAtTime(actualFreq * 3, now);
+          altissimoGain = ctx.createGain();
+          altissimoGain.gain.setValueAtTime(0.09, now);
+          altissimoGain.gain.exponentialRampToValueAtTime(0.005, now + duration);
+          biteOsc.connect(altissimoGain);
+          altissimoGain.connect(bodyFilter);
+          biteOsc.start(now);
+          biteOsc.stop(now + duration);
+        }
+
         // 呼吸气流粉红噪声 (Breath Air Stream)
-        const breathSize = Math.floor(ctx.sampleRate * Math.min(duration, 0.4));
+        const breathSize = Math.floor(ctx.sampleRate * Math.min(duration, 0.45));
         const breathBuffer = ctx.createBuffer(1, breathSize, ctx.sampleRate);
         const breathData = breathBuffer.getChannelData(0);
         let b0 = 0, b1 = 0, b2 = 0;
@@ -215,12 +530,12 @@ export function useSoundEngine() {
           b0 = 0.99886 * b0 + white * 0.0555179;
           b1 = 0.99332 * b1 + white * 0.0750759;
           b2 = 0.96900 * b2 + white * 0.1538520;
-          breathData[i] = (b0 + b1 + b2 + white * 0.5362) * 0.04;
+          breathData[i] = (b0 + b1 + b2 + white * 0.5362) * 0.038;
         }
         const breathSource = ctx.createBufferSource();
         breathSource.buffer = breathBuffer;
         const breathGain = ctx.createGain();
-        breathGain.gain.setValueAtTime(0.012, now);
+        breathGain.gain.setValueAtTime(register === 'altissimo' ? 0.024 : 0.012, now);
         breathGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
         breathSource.connect(breathGain);
         breathGain.connect(ctx.destination);
@@ -229,21 +544,22 @@ export function useSoundEngine() {
         // 主增益节点与自然包络 (ADSR)
         const masterGain = ctx.createGain();
         masterGain.gain.setValueAtTime(0.0001, now);
-        // 软起音 Attack (35ms)
-        masterGain.gain.linearRampToValueAtTime(0.24, now + 0.035);
-        masterGain.gain.linearRampToValueAtTime(0.18, now + 0.12);
-        // 延音与渐弱 Release
-        masterGain.gain.setValueAtTime(0.18, now + duration - 0.07);
+        const attackTime = register === 'altissimo' ? 0.018 : saxType === 'soprano' ? 0.025 : 0.035;
+        const peakGain = register === 'altissimo' ? 0.28 : 0.24;
+        masterGain.gain.linearRampToValueAtTime(peakGain, now + attackTime);
+        masterGain.gain.linearRampToValueAtTime(peakGain * 0.78, now + 0.12);
+        masterGain.gain.setValueAtTime(peakGain * 0.78, now + duration - 0.06);
         masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         const highGain = ctx.createGain();
-        highGain.gain.setValueAtTime(0.04, now);
+        highGain.gain.setValueAtTime(register === 'altissimo' ? 0.12 : 0.04, now);
 
-        reedOsc.connect(bodyFilter);
+        reedOsc.connect(formantFilter);
         subOsc.connect(bodyFilter);
         highOsc.connect(highGain);
-        highGain.connect(bodyFilter);
+        highGain.connect(formantFilter);
 
+        formantFilter.connect(bodyFilter);
         bodyFilter.connect(masterGain);
         masterGain.connect(ctx.destination);
 
@@ -262,7 +578,7 @@ export function useSoundEngine() {
   );
 
   /**
-   * 萨克斯按键综合发音方法 (Key Press Sound with pad click + acoustic tone)
+   * 萨克斯按键综合发音方法 (发皮垫机械声 + 对应音区真实萨克斯乐音)
    */
   const playSaxKeyAction = useCallback(
     (
@@ -270,23 +586,35 @@ export function useSoundEngine() {
       saxType: SaxophoneType,
       options?: {
         soundMode?: 'both' | 'tone' | 'click';
+        register?: SaxRegister;
         customFreq?: number;
       }
     ) => {
       const mode = options?.soundMode || 'both';
+      const register = options?.register || 'low';
 
       // 1. 发出真实皮革音垫机械声
       if (mode === 'both' || mode === 'click') {
         playKeyPadClick(keyId);
       }
 
-      // 2. 发出萨克斯乐音声学音色
+      // 2. 发出萨克斯乐音声学音色 (高八度 / 超吹 / 低八度)
       if (mode === 'both' || mode === 'tone') {
-        const targetFreq = options?.customFreq || KEY_PITCH_MAP[keyId]?.freq || 440;
-        // 稍作微秒延迟(5ms)，使机械皮革触感与哨片震颤更具真实物理层次感
+        const keyInfo = KEY_PITCH_MAP[keyId];
+        let targetFreq = options?.customFreq;
+        if (!targetFreq) {
+          if (register === 'altissimo') {
+            targetFreq = keyInfo?.altissimoFreq || 1400;
+          } else if (register === 'high') {
+            targetFreq = keyInfo?.highFreq || (keyInfo ? keyInfo.lowFreq * 2 : 880);
+          } else {
+            targetFreq = keyInfo?.lowFreq || 440;
+          }
+        }
+
         setTimeout(() => {
-          playTone(targetFreq, saxType, 0.42);
-        }, 6);
+          playTone(targetFreq, saxType, register === 'altissimo' ? 0.55 : 0.44, register);
+        }, 4);
       }
     },
     [playKeyPadClick, playTone]

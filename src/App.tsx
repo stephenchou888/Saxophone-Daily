@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SaxophoneType } from './types/music';
 import { SCALES, FINGERINGS, KEY_NAME_MAP } from './data/scales';
-import { useSoundEngine } from './hooks/useSoundEngine';
+import { useSoundEngine, getSaxSoundingPitch } from './hooks/useSoundEngine';
 import { SaxophoneDiagram } from './components/SaxophoneDiagram';
 import { SheetMusicView } from './components/SheetMusicView';
 import { Metronome } from './components/Metronome';
@@ -57,13 +57,25 @@ export default function App() {
   };
 
   // Sounding pitch calculation for display
-  const semitoneShift = saxType === 'alto' ? -9 : -2;
-  const soundingFreq = Math.round(currentFingering.freq * Math.pow(2, semitoneShift / 12));
+  const soundingPitchInfo = getSaxSoundingPitch(currentFingering.freq, saxType);
+  const soundingFreq = soundingPitchInfo.concertFreq;
+  const soundingNote = soundingPitchInfo.noteName;
+
+  const getNoteRegister = (fingering?: { freq: number; keys: string[] }): 'low' | 'high' | 'altissimo' => {
+    if (!fingering) return 'low';
+    if (fingering.freq >= 1100 || fingering.keys.some((k) => k.includes('palm') || k.includes('front_f'))) {
+      return 'altissimo';
+    }
+    if (fingering.freq >= 580 || fingering.keys.includes('key_octave')) {
+      return 'high';
+    }
+    return 'low';
+  };
 
   // Play current note sound
   const playCurrentNote = useCallback(() => {
     if (currentFingering) {
-      playTone(currentFingering.freq, saxType, 0.45);
+      playTone(currentFingering.freq, saxType, 0.45, getNoteRegister(currentFingering));
     }
   }, [currentFingering, playTone, saxType]);
 
@@ -72,7 +84,7 @@ export default function App() {
       const nextIdx = prev > 0 ? prev - 1 : currentScale.notes.length - 1;
       const note = currentScale.notes[nextIdx];
       const fingering = FINGERINGS[note];
-      if (fingering) playTone(fingering.freq, saxType, 0.45);
+      if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
       return nextIdx;
     });
   }, [currentScale.notes, playTone, saxType]);
@@ -82,7 +94,7 @@ export default function App() {
       const nextIdx = prev < currentScale.notes.length - 1 ? prev + 1 : 0;
       const note = currentScale.notes[nextIdx];
       const fingering = FINGERINGS[note];
-      if (fingering) playTone(fingering.freq, saxType, 0.45);
+      if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
       return nextIdx;
     });
   }, [currentScale.notes, playTone, saxType]);
@@ -93,7 +105,7 @@ export default function App() {
         setCurrentNoteIndex(index);
         const note = currentScale.notes[index];
         const fingering = FINGERINGS[note];
-        if (fingering) playTone(fingering.freq, saxType, 0.45);
+        if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
       }
     },
     [currentScale.notes, playTone, saxType]
@@ -271,7 +283,8 @@ export default function App() {
                 <div className="space-y-2 text-left sm:text-right">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm font-bold">
                     <span>实际发音({saxType === 'alto' ? 'Eb' : 'Bb'}):</span>
-                    <span>{soundingFreq} Hz</span>
+                    <span className="text-white font-extrabold">{soundingNote}</span>
+                    <span className="text-emerald-300/80">({soundingFreq} Hz)</span>
                   </div>
                   <div className="text-xs text-slate-400">
                     第 <strong className="text-amber-400">{currentNoteIndex + 1}</strong> / {currentScale.notes.length} 音

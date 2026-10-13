@@ -1,6 +1,7 @@
 import { NoteFingering, ScaleDefinition } from '../types/music';
 
 export const FINGERINGS: Record<string, NoteFingering> = {
+  // ===================== 低音区与中音区 (Low & Middle Register) =====================
   'C4':  { desc: '低音 1 (Do)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_c'], freq: 261.63 },
   'C#4': { desc: '低音 #1 (Do#)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_lh_cis', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_c'], freq: 277.18 },
   'Db4': { desc: '低音 b2 (Reb)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_lh_gis', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_c'], freq: 277.18 },
@@ -21,33 +22,65 @@ export const FINGERINGS: Record<string, NoteFingering> = {
   'C5':  { desc: '中音 1 (Do)', keys: ['key_lh2'], freq: 523.25 },
   'C#5': { desc: '中音 #1 (全开音孔)', keys: [], freq: 554.37 },
   'Db5': { desc: '中音 b2 (全开音孔)', keys: [], freq: 554.37 },
-  'D5':  { desc: '高音 2 (Re)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3'], freq: 587.33 },
-  'D#5': { desc: '高音 #2 (Re#)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_eb'], freq: 622.25 },
-  'Eb5': { desc: '高音 b3 (Mib)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_eb'], freq: 622.25 },
-  'E5':  { desc: '高音 3 (Mi)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2'], freq: 659.25 },
-  'F5':  { desc: '高音 4 (Fa)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1'], freq: 698.46 },
-  'F#5': { desc: '高音 #4 (Fa#)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh2'], freq: 739.99 },
-  'Gb5': { desc: '高音 b5 (Solb)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh2'], freq: 739.99 },
-  'G5':  { desc: '高音 5 (Sol)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3'], freq: 783.99 },
-  'G#5': { desc: '高音 #5 (Sol#)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_lh_gis'], freq: 830.61 },
-  'Ab5': { desc: '高音 b6 (Lab)', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_lh_gis'], freq: 830.61 },
-  'A5':  { desc: '高音 6 (La)', keys: ['key_octave', 'key_lh1', 'key_lh2'], freq: 880.00 },
-  'Bb5': { desc: '高音 b7 (Sib)', keys: ['key_octave', 'key_lh1', 'key_rh1'], freq: 932.33 },
-  'B5':  { desc: '高音 7 (Si)', keys: ['key_octave', 'key_lh1'], freq: 987.77 },
-  'C6':  { desc: '倍高音 1 (Do)', keys: ['key_octave', 'key_lh2'], freq: 1046.50 }
+
+  // ===================== 高八度音区 (High Octave Register) =====================
+  'D5':  { desc: '高音 2 (Re) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3'], freq: 587.33 },
+  'D#5': { desc: '高音 #2 (Re#) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_eb'], freq: 622.25 },
+  'Eb5': { desc: '高音 b3 (Mib) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_eb'], freq: 622.25 },
+  'E5':  { desc: '高音 3 (Mi) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2'], freq: 659.25 },
+  'F5':  { desc: '高音 4 (Fa) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh1'], freq: 698.46 },
+  'F#5': { desc: '高音 #4 (Fa#) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh2'], freq: 739.99 },
+  'Gb5': { desc: '高音 b5 (Solb) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_rh2'], freq: 739.99 },
+  'G5':  { desc: '高音 5 (Sol) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3'], freq: 783.99 },
+  'G#5': { desc: '高音 #5 (Sol#) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_lh_gis'], freq: 830.61 },
+  'Ab5': { desc: '高音 b6 (Lab) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2', 'key_lh3', 'key_lh_gis'], freq: 830.61 },
+  'A5':  { desc: '高音 6 (La) / 8度键', keys: ['key_octave', 'key_lh1', 'key_lh2'], freq: 880.00 },
+  'Bb5': { desc: '高音 b7 (Sib) / 8度键', keys: ['key_octave', 'key_lh1', 'key_rh1'], freq: 932.33 },
+  'B5':  { desc: '高音 7 (Si) / 8度键', keys: ['key_octave', 'key_lh1'], freq: 987.77 },
+  'C6':  { desc: '倍高音 1 (Do) / 8度键', keys: ['key_octave', 'key_lh2'], freq: 1046.50 },
+
+  // ===================== 超吹与极高音区 (Altissimo Register) =====================
+  'D6':  { desc: '超吹/掌键高音 D (Re)', keys: ['key_octave', 'key_palm_d'], freq: 1174.66 },
+  'D#6': { desc: '超吹/掌键高音 D# (Re#)', keys: ['key_octave', 'key_palm_d', 'key_palm_eb'], freq: 1244.51 },
+  'Eb6': { desc: '超吹/掌键高音 Eb (Mib)', keys: ['key_octave', 'key_palm_d', 'key_palm_eb'], freq: 1244.51 },
+  'E6':  { desc: '超吹/高音掌键 E (Mi)', keys: ['key_octave', 'key_palm_d', 'key_palm_eb', 'key_side_c'], freq: 1318.51 },
+  'F6':  { desc: '超吹/前F叉键高音 F (Fa)', keys: ['key_octave', 'key_front_f', 'key_lh2'], freq: 1396.91 },
+  'F#6': { desc: '超吹/极高音 F# (Fa#)', keys: ['key_octave', 'key_front_f', 'key_lh2', 'key_high_fis'], freq: 1479.98 },
+  'G6':  { desc: '超吹 Altissimo G (Sol)', keys: ['key_octave', 'key_front_f', 'key_lh1', 'key_lh3', 'key_side_bb'], freq: 1567.98 },
+  'G#6': { desc: '超吹 Altissimo G# (Sol#)', keys: ['key_octave', 'key_front_f', 'key_lh2', 'key_lh3', 'key_side_c'], freq: 1661.22 },
+  'A6':  { desc: '超吹 Altissimo A (La)', keys: ['key_octave', 'key_lh2', 'key_rh1', 'key_rh2', 'key_rh3'], freq: 1760.00 },
 };
 
 export const KEY_NAME_MAP: Record<string, string> = {
+  // 八度与超吹键
   'key_octave': '八度高音键(8)',
+  'key_front_f': '前高音F叉键 (超吹核心键)',
+  
+  // 掌键群
+  'key_palm_d': '左手掌键D',
+  'key_palm_eb': '左手掌键Eb',
+  'key_palm_f': '左手掌键F',
+
+  // 左手主键
   'key_lh1': '左手1(B)',
   'key_lh2': '左手2(A)',
   'key_lh3': '左手3(G)',
   'key_lh_gis': '左手G#侧键',
   'key_lh_cis': '左手低音C#键',
   'key_lh_low_b': '左手低音B键',
+  'key_lh_low_bb': '左手低音Bb键',
+
+  // 右手主键
   'key_rh1': '右手4(F)',
   'key_rh2': '右手5(E)',
   'key_rh3': '右手6(D)',
+
+  // 侧键群
+  'key_side_c': '右手侧C键',
+  'key_side_bb': '右手侧Bb键',
+  'key_high_fis': '右手侧F#键',
+
+  // 小指台
   'key_rh_eb': '右手低音Eb键',
   'key_rh_c': '右手低音C键'
 };
@@ -61,6 +94,24 @@ export const SCALES: ScaleDefinition[] = [
     tip: '基础中的基础。重点检验低音 C4 到 C5 的气流充盈度与 C5 (中指单按) 的音准。',
     notes: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'F5', 'E5', 'D5', 'C5', 'B4', 'A4', 'G4', 'F4', 'E4', 'D4', 'C4'],
     abc: 'X:1\nT:C 大调音阶练习\nM:4/4\nL:1/4\nK:C\nC D E F | G A B c | d e f g |\nf e d c | B A G F | E D C2 |]'
+  },
+  {
+    id: 'high_octave_mastery',
+    name: '⚡ 高八度高音域专项练习 (High Octave D5 - C6)',
+    keySig: '八度键配合',
+    accidentals: '八度高音区',
+    tip: '八度高音泛音孔训练：拇指稳稳按住八度高音键，喉部适度开阔，下唇微收，音色平稳直冲高音区。',
+    notes: ['C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6', 'B5', 'A5', 'G5', 'F5', 'E5', 'D5', 'C5'],
+    abc: "X:1\nT:高八度高音练习\nM:4/4\nL:1/4\nK:C\nc d e f | g a b c' |\nb a g f | e d c2 |]"
+  },
+  {
+    id: 'altissimo_mastery',
+    name: '🔥 萨克斯超吹特训音阶 (Altissimo 超高音 D6 - A6)',
+    keySig: '超吹泛音与前F/侧键',
+    accidentals: '超吹音域 (Altissimo)',
+    tip: '萨克斯超吹（Altissimo）是萨克斯最具表现力的高阶绝技！使用前高音F叉键、高音掌键与喉位超吹泛音控制，突破标准音域，发出穿透力极强的裂帛高音。',
+    notes: ['C6', 'D6', 'Eb6', 'E6', 'F6', 'F#6', 'G6', 'A6', 'G6', 'F#6', 'F6', 'E6', 'Eb6', 'D6', 'C6'],
+    abc: "X:1\nT:萨克斯超吹特训\nM:4/4\nL:1/4\nK:C\nc' d' e' f' | g' a' g' f' |\ne' d' c'2 |]"
   },
   {
     id: 'g_major',
