@@ -137,8 +137,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 py-6 sm:py-8 px-3 sm:px-6 touch-manipulation pb-safe">
-      {/* Expanded wide container up to 1440px for immersive desktop experience */}
-      <div className="max-w-[1440px] mx-auto space-y-6">
+      {/* Expanded wide container up to 1560px for immersive desktop experience */}
+      <div className="max-w-[1560px] mx-auto space-y-6">
         {/* ===================== Header ===================== */}
         <header className="text-center space-y-2">
           <div className="flex flex-wrap items-center justify-center gap-2 mb-1">
@@ -251,8 +251,8 @@ export default function App() {
 
         {/* ===================== Dynamic Fingering & Instrument Section ===================== */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Note Details, Controls, Metronome & Streak (6 cols on Desktop) */}
-          <div className="lg:col-span-6 space-y-6">
+          {/* Left Column: Note Details, Controls, Metronome & Streak (5 cols on Desktop) */}
+          <div className="lg:col-span-5 space-y-6">
             {/* Note & Fingering Control Card */}
             <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-5 sm:p-6 backdrop-blur-md shadow-xl space-y-5">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-950/80 rounded-2xl p-5 border border-slate-800/80">
@@ -341,8 +341,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Column: Physical Saxophone Diagram Card (6 cols on Desktop) */}
-          <div className="lg:col-span-6 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 sm:p-6 backdrop-blur-md shadow-xl flex flex-col items-center justify-center">
+          {/* Right Column: Physical Saxophone Diagram Card (7 cols on Desktop - Enlarged) */}
+          <div className="lg:col-span-7 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 sm:p-6 backdrop-blur-md shadow-xl flex flex-col items-center justify-center">
             <SaxophoneDiagram
               activeKeys={currentFingering.keys}
               saxType={saxType}
