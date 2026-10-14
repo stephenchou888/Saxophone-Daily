@@ -263,9 +263,9 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Dropdown Menu Panel */}
+              {/* Dropdown Menu Panel - Solid opaque background to prevent transparency bleeding */}
               {isScaleDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-full sm:w-96 max-h-[380px] overflow-y-auto rounded-xl border border-border bg-card/95 p-2 shadow-2xl backdrop-blur-xl z-50 space-y-3">
+                <div className="absolute right-0 mt-2 w-full sm:w-96 max-h-[380px] overflow-y-auto rounded-xl border border-slate-700 bg-[#090d16] p-2 shadow-2xl z-50 space-y-3">
                   {/* Category 1: Special */}
                   <div>
                     <div className="px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 rounded-lg mb-1 flex items-center gap-1.5">
@@ -279,7 +279,7 @@ export default function App() {
                             key={s.id}
                             onClick={() => handleScaleChange(s.id)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
-                              isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                              isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-slate-800 text-slate-300 hover:text-white'
                             }`}
                           >
                             <span>{s.name.split(' (')[0]} <span className="opacity-75">({s.accidentals})</span></span>
@@ -303,7 +303,7 @@ export default function App() {
                             key={s.id}
                             onClick={() => handleScaleChange(s.id)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
-                              isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                              isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-slate-800 text-slate-300 hover:text-white'
                             }`}
                           >
                             <span>{s.name.split(' (')[0]} <span className="opacity-75">({s.accidentals})</span></span>
@@ -327,7 +327,7 @@ export default function App() {
                             key={s.id}
                             onClick={() => handleScaleChange(s.id)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
-                              isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                              isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-slate-800 text-slate-300 hover:text-white'
                             }`}
                           >
                             <span>{s.name.split(' (')[0]} <span className="opacity-75">({s.accidentals})</span></span>
@@ -351,7 +351,7 @@ export default function App() {
                             key={s.id}
                             onClick={() => handleScaleChange(s.id)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
-                              isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                              isSelected ? 'bg-primary text-primary-foreground font-bold shadow-xs' : 'hover:bg-slate-800 text-slate-300 hover:text-white'
                             }`}
                           >
                             <span>{s.name.split(' (')[0]} <span className="opacity-75">({s.accidentals})</span></span>
