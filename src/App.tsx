@@ -265,6 +265,13 @@ export default function App() {
                     </option>
                   ))}
                 </optgroup>
+                <optgroup label="🎼 萨克斯考级核心和声小调 (导音升半音)" className="bg-slate-950 text-purple-400 font-bold">
+                  {SCALES.filter((s) => s.category === 'harmonic_minor').map((s) => (
+                    <option key={s.id} value={s.id} className="bg-slate-900 text-slate-100 font-normal">
+                      {s.name.split(' (')[0]} ({s.accidentals})
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
           </div>

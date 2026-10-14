@@ -131,6 +131,26 @@ export const SCALES: ScaleDefinition[] = [
     notes: ['C4', 'C#4', 'D4', 'Eb4', 'E4', 'F4', 'F#4', 'G4', 'Ab4', 'A4', 'Bb4', 'B4', 'C5', 'B4', 'Bb4', 'A4', 'Ab4', 'G4', 'F#4', 'F4', 'E4', 'Eb4', 'D4', 'C#4', 'C4'],
     abc: 'X:1\nT:半音阶全域训练\nM:4/4\nL:1/4\nK:C\nC ^C D _E | E F ^F G | _A A _B B | c B _B A |\n_A G ^F F | E _E D ^C | C2 |]'
   },
+  {
+    id: 'c_pentatonic',
+    name: '🏮 C 宫调中国五声音阶 (Pentatonic 宫商角徵羽)',
+    category: 'special',
+    keySig: '五声音阶 (1 2 3 5 6)',
+    accidentals: '无半音音阶',
+    tip: '流行萨克斯中国风核心音阶！如《青花瓷》《菊花台》《红豆》等经典萨克斯金曲均基于五声音阶构建，旋律优美典雅。',
+    notes: ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'D5', 'C5', 'A4', 'G4', 'E4', 'D4', 'C4'],
+    abc: 'X:1\nT:C 宫调中国五声音阶\nM:4/4\nL:1/4\nK:C\nC D E G | A c d e |\nd c A G | E D C2 |]'
+  },
+  {
+    id: 'c_arpeggio',
+    name: '🎹 C 大调主三和弦与分解琶音 (Arpeggio 基本功拓展)',
+    category: 'special',
+    keySig: '主三和弦 (1 3 5 1)',
+    accidentals: '琶音模进',
+    tip: '萨克斯基础发音与跨度运指的核心练习。训练指距跨音程时气息支撑的均一性与音色连贯。',
+    notes: ['C4', 'E4', 'G4', 'C5', 'E5', 'G5', 'E5', 'C5', 'G4', 'E4', 'C4'],
+    abc: 'X:1\nT:C 大调琶音练习\nM:4/4\nL:1/4\nK:C\nC E G c | e g e c |\nG E C2 |]'
+  },
 
   // ===================== 2. 五度圈完整 12 个自然大调 (十二平均律全套) =====================
   {
@@ -314,5 +334,47 @@ export const SCALES: ScaleDefinition[] = [
     tip: '贝多芬式英雄悲剧色彩。从低音 C4 到中音区运指，左右小指均需精确联动。',
     notes: ['C4', 'D4', 'Eb4', 'F4', 'G4', 'Ab4', 'Bb4', 'C5', 'Bb4', 'Ab4', 'G4', 'F4', 'Eb4', 'D4', 'C4'],
     abc: 'X:1\nT:C 小调音阶练习\nM:4/4\nL:1/4\nK:Cm\nC D E F | G A B c |\nB A G F | E D C2 |]'
+  },
+
+  // ===================== 4. 萨克斯考级核心和声小调 (导音升高半音) =====================
+  {
+    id: 'a_harmonic_minor',
+    name: 'A 和声小调音阶 (A Harmonic Minor)',
+    category: 'harmonic_minor',
+    keySig: '和声小调 · 导音升半音 (G#)',
+    accidentals: '升 7 级 (G#)',
+    tip: '萨克斯考级必考！和声小调将第7级音升高半音（G#），形成小二度导向主音的强烈倾向感和异域风情增二度。',
+    notes: ['A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G#5', 'A5', 'G#5', 'F5', 'E5', 'D5', 'C5', 'B4', 'A4'],
+    abc: 'X:1\nT:A 和声小调练习\nM:4/4\nL:1/4\nK:Am\nA B c d | e f ^g a |\n^g f e d | c B A2 |]'
+  },
+  {
+    id: 'e_harmonic_minor',
+    name: 'E 和声小调音阶 (E Harmonic Minor)',
+    category: 'harmonic_minor',
+    keySig: '1 升号 (F#) + 升导音 (D#)',
+    accidentals: 'F#, 导音 D#',
+    tip: '升高第7级导音（D#5），练习左手掌键与右手小指低音及八度键配合。',
+    notes: ['E4', 'F#4', 'G4', 'A4', 'B4', 'C5', 'D#5', 'E5', 'D#5', 'C5', 'B4', 'A4', 'G4', 'F#4', 'E4'],
+    abc: 'X:1\nT:E 和声小调练习\nM:4/4\nL:1/4\nK:Em\nE F G A | B c ^d e |\n^d c B A | G F E2 |]'
+  },
+  {
+    id: 'd_harmonic_minor',
+    name: 'D 和声小调音阶 (D Harmonic Minor)',
+    category: 'harmonic_minor',
+    keySig: '1 降号 (Bb) + 升导音 (C#)',
+    accidentals: 'Bb, 导音 C#',
+    tip: '升高第7级导音（C#5），练习全开音孔与降Bb之间的颗粒感衔接。',
+    notes: ['D4', 'E4', 'F4', 'G4', 'A4', 'Bb4', 'C#5', 'D5', 'C#5', 'Bb4', 'A4', 'G4', 'F4', 'E4', 'D4'],
+    abc: 'X:1\nT:D 和声小调练习\nM:4/4\nL:1/4\nK:Dm\nD E F G | A B ^c d |\n^c B A G | F E D2 |]'
+  },
+  {
+    id: 'c_harmonic_minor',
+    name: 'C 和声小调音阶 (C Harmonic Minor)',
+    category: 'harmonic_minor',
+    keySig: '3 降号 (Bb, Eb, Ab) + 导音还原B',
+    accidentals: 'Eb, Ab, Bb, 导音 B',
+    tip: '经典戏剧性色彩。Ab到B的增二度音程跳跃，注意运指松弛不紧绷。',
+    notes: ['C4', 'D4', 'Eb4', 'F4', 'G4', 'Ab4', 'B4', 'C5', 'B4', 'Ab4', 'G4', 'F4', 'Eb4', 'D4', 'C4'],
+    abc: 'X:1\nT:C 和声小调练习\nM:4/4\nL:1/4\nK:Cm\nC D _E F | G _A B c |\nB _A G F | _E D C2 |]'
   }
 ];
