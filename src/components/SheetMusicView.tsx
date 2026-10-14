@@ -192,14 +192,14 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       const paths = target.querySelectorAll('path');
       if (paths.length > 0) {
         paths.forEach((p) => {
-          p.style.fill = '#d97706';
-          p.style.stroke = '#d97706';
-          p.style.filter = 'drop-shadow(0 0 6px rgba(217, 119, 6, 0.95))';
+          p.style.fill = '#f59e0b';
+          p.style.stroke = '#f59e0b';
+          p.style.filter = 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.95))';
         });
       } else {
-        target.style.fill = '#d97706';
-        target.style.stroke = '#d97706';
-        target.style.filter = 'drop-shadow(0 0 6px rgba(217, 119, 6, 0.95))';
+        target.style.fill = '#f59e0b';
+        target.style.stroke = '#f59e0b';
+        target.style.filter = 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.95))';
       }
 
       // 平滑居中滚动当前音符
@@ -212,12 +212,12 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   }, [currentNoteIndex, activeAbc]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-white border border-slate-300 shadow-xl transition-all">
+    <div className="relative w-full overflow-hidden rounded-xl bg-card border border-border shadow-sm transition-all">
       {/* 顶部控制栏与升降号辅助开关 */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-slate-50 gap-2">
+      <div className="flex flex-wrap items-center justify-between px-4 py-2.5 border-b border-border bg-muted/40 gap-2">
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-          <span className="text-xs sm:text-sm font-bold text-slate-800">
+          <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+          <span className="text-xs sm:text-sm font-semibold text-foreground">
             矢量五线谱视奏 (本位移调记谱 · 视谱即吹)
           </span>
         </div>
@@ -227,10 +227,10 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
           {/* 升降号显式标注切换开关（核心功能） */}
           <button
             onClick={() => setShowAccidentals((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-sm border ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all border ${
               showAccidentals
-                ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-amber-500/20'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground'
             }`}
             title={showAccidentals ? '点击切换为规范记谱（仅谱号调号）' : '点击开启音符升降号标记（直观标注哪些音需升/降）'}
           >
@@ -241,10 +241,10 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
           {/* 音名唱名标注开关 */}
           <button
             onClick={() => setShowNoteNames((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all border ${
               showNoteNames
-                ? 'bg-indigo-600 text-white border-indigo-700'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                : 'bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground'
             }`}
             title="显示/隐藏音符下方的唱名音名"
           >
@@ -252,13 +252,13 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
           </button>
 
           {/* 单行/双行排版切换 */}
-          <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-xs font-semibold">
+          <div className="flex items-center bg-secondary p-0.5 rounded-lg text-xs font-medium">
             <button
               onClick={() => setLayoutMode('single-line')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${
                 layoutMode === 'single-line'
-                  ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
               title="单行全景视奏（推荐宽屏连续吹奏）"
             >
@@ -269,8 +269,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
               onClick={() => setLayoutMode('multi-line')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${
                 layoutMode === 'multi-line'
-                  ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
               title="双行折叠排版"
             >
@@ -280,20 +280,20 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
           </div>
 
           {/* 缩放按钮 */}
-          <div className="hidden sm:flex items-center gap-1 bg-slate-200/80 p-0.5 rounded-lg text-xs">
+          <div className="hidden sm:flex items-center gap-1 bg-secondary p-0.5 rounded-lg text-xs">
             <button
               onClick={() => setScaleFactor((prev) => Math.max(0.9, prev - 0.1))}
-              className="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-300 rounded"
+              className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded transition-colors"
               title="缩小乐谱"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="px-1 text-[11px] font-mono font-bold text-slate-700 min-w-[36px] text-center">
+            <span className="px-1 text-[11px] font-mono font-semibold text-foreground min-w-[36px] text-center">
               {Math.round(scaleFactor * 100)}%
             </span>
             <button
               onClick={() => setScaleFactor((prev) => Math.min(1.8, prev + 0.1))}
-              className="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-300 rounded"
+              className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded transition-colors"
               title="放大乐谱"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -303,37 +303,37 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       </div>
 
       {/* 调性升降号特征快速指引条（让初学者一目了然需要升降哪些音） */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-2 bg-amber-50/70 border-b border-amber-200/60 text-xs gap-2">
+      <div className="flex flex-wrap items-center justify-between px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-slate-700 flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <span className="font-semibold text-foreground flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
             本调必须升降的音符（已在音符上直接标注）:
           </span>
           {alteredNotes.length > 0 ? (
             alteredNotes.map((note) => (
               <span
                 key={note}
-                className="px-2 py-0.5 rounded-md font-black bg-white text-amber-700 border border-amber-300 shadow-xs"
+                className="px-2 py-0.5 rounded font-bold bg-card text-primary border border-primary/30 shadow-xs"
               >
                 {note}
               </span>
             ))
           ) : (
-            <span className="text-emerald-700 font-bold bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-300">
+            <span className="text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
               全本位自然音（无升降号，全部按自然键位吹奏）
             </span>
           )}
         </div>
 
-        <span className="text-[11px] text-slate-500 font-medium hidden md:inline-flex items-center gap-1">
-          <Eye className="w-3 h-3 text-slate-400" /> 点击谱上任意音符即可切音视奏与发声
+        <span className="text-[11px] text-muted-foreground font-medium hidden md:inline-flex items-center gap-1">
+          <Eye className="w-3 h-3 text-muted-foreground" /> 点击谱上任意音符即可切音视奏与发声
         </span>
       </div>
 
       {/* 五线谱渲染区域 */}
       <div
         ref={scrollWrapperRef}
-        className="w-full overflow-x-auto min-h-[160px] p-3 sm:p-5 text-center select-none text-slate-900 scroll-smooth"
+        className="w-full overflow-x-auto min-h-[160px] p-3 sm:p-5 text-center select-none bg-white text-slate-900 scroll-smooth"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <div
@@ -341,7 +341,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
           id="sheetMusicContainer"
           className="inline-block min-w-full"
         >
-          <div className="py-10 text-sm text-slate-400">正在生成高精度五线谱...</div>
+          <div className="py-10 text-sm text-slate-500">正在生成高精度五线谱...</div>
         </div>
       </div>
     </div>

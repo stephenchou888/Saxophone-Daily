@@ -44,26 +44,26 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-5 backdrop-blur-md shadow-xl transition-all">
+    <div className="rounded-xl border border-border bg-card text-card-foreground p-5 shadow-sm transition-all">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
             <Gauge className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
               节拍器辅助
               <span
                 className={`inline-block w-2.5 h-2.5 rounded-full transition-all duration-75 ${
                   beatActive
-                    ? 'bg-amber-400 ring-4 ring-amber-400/40 scale-125'
+                    ? 'bg-primary ring-4 ring-primary/30 scale-125'
                     : isPlaying
-                    ? 'bg-amber-600/40'
-                    : 'bg-slate-700'
+                    ? 'bg-primary/50'
+                    : 'bg-muted-foreground/30'
                 }`}
               />
             </h3>
-            <p className="text-xs text-slate-400">稳定气流与手指颗粒感的基础</p>
+            <p className="text-xs text-muted-foreground">稳定气流与手指颗粒感的基础</p>
           </div>
         </div>
 
@@ -71,17 +71,17 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => adjustBpm(-1)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            className="inline-flex items-center justify-center rounded-md p-1.5 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="减小 1 BPM"
           >
             <Minus className="w-4 h-4" />
           </button>
-          <div className="text-2xl font-black font-mono text-amber-400 min-w-[75px] text-center">
-            {bpm} <span className="text-xs font-sans text-slate-400 font-normal">BPM</span>
+          <div className="text-xl font-bold font-mono text-primary min-w-[75px] text-center">
+            {bpm} <span className="text-xs font-sans text-muted-foreground font-normal">BPM</span>
           </div>
           <button
             onClick={() => adjustBpm(1)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            className="inline-flex items-center justify-center rounded-md p-1.5 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="增加 1 BPM"
           >
             <Plus className="w-4 h-4" />
@@ -92,16 +92,16 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
       {/* Slider & Presets */}
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-slate-400">50</span>
+          <span className="text-xs font-medium text-muted-foreground">50</span>
           <input
             type="range"
             min="50"
             max="150"
             value={bpm}
             onChange={(e) => setBpm(parseInt(e.target.value, 10))}
-            className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-amber-400 transition-all"
+            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary transition-all"
           />
-          <span className="text-xs font-semibold text-slate-400">150</span>
+          <span className="text-xs font-medium text-muted-foreground">150</span>
         </div>
 
         <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
@@ -110,10 +110,10 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
               <button
                 key={val}
                 onClick={() => setBpm(val)}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
                   bpm === val
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                    : 'bg-slate-800/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                    ? 'bg-primary/20 text-primary border border-primary/40'
+                    : 'bg-secondary/70 text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}
               >
                 {val}
@@ -123,10 +123,10 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
 
           <button
             onClick={togglePlay}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 shadow-md ${
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold text-xs sm:text-sm transition-all duration-200 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               isPlaying
-                ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20'
-                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold shadow-amber-500/20'
+                ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90'
             }`}
           >
             {isPlaying ? (

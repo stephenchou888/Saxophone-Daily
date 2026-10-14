@@ -79,45 +79,45 @@ export const StreakCard: React.FC = () => {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 backdrop-blur-md shadow-xl text-center">
+    <div className="rounded-xl border border-border bg-card text-card-foreground p-6 shadow-sm text-center">
       <div className="flex items-center justify-center gap-2 mb-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
           <Flame className="w-6 h-6 fill-current animate-bounce text-amber-500" />
         </div>
-        <span className="text-sm font-semibold tracking-wide text-slate-400 uppercase">
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Daily Streak
         </span>
       </div>
 
       <div className="flex items-center justify-center gap-2 my-2">
-        <span className="text-slate-300 font-bold text-lg">已连续练习打卡</span>
-        <span className="text-4xl font-black text-emerald-400 font-mono tracking-tight">
+        <span className="text-foreground font-semibold text-base">已连续练习打卡</span>
+        <span className="text-3xl font-bold text-emerald-400 font-mono tracking-tight">
           {streak}
         </span>
-        <span className="text-slate-300 font-bold text-lg">天</span>
+        <span className="text-foreground font-semibold text-base">天</span>
         {streak >= 3 && (
           <Trophy className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse ml-1" />
         )}
       </div>
 
-      <p className="text-xs text-slate-400 mb-5">{statusMessage}</p>
+      <p className="text-xs text-muted-foreground mb-5">{statusMessage}</p>
 
       <button
         onClick={handleCheckin}
         disabled={hasCheckedInToday}
-        className={`w-full py-3.5 px-6 rounded-xl font-extrabold text-base transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${
+        className={`w-full py-3 px-6 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           hasCheckedInToday
-            ? 'bg-slate-800 text-emerald-400 border border-emerald-500/30 cursor-default'
-            : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/25 active:scale-[0.99] cursor-pointer'
+            ? 'bg-secondary text-emerald-400 border border-emerald-500/30 cursor-default'
+            : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 shadow-emerald-500/20 active:scale-[0.99] cursor-pointer'
         }`}
       >
         {hasCheckedInToday ? (
           <>
-            <CheckCircle2 className="w-5 h-5" /> 今日练习已打卡
+            <CheckCircle2 className="w-4 h-4" /> 今日练习已打卡
           </>
         ) : (
           <>
-            <Sparkles className="w-5 h-5" /> 完成今日练习打卡
+            <Sparkles className="w-4 h-4" /> 完成今日练习打卡
           </>
         )}
       </button>
