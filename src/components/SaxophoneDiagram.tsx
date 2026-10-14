@@ -11,7 +11,6 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Music,
   Flame,
   Zap,
   Info,
@@ -34,12 +33,12 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   saxType,
   onKeyClick,
 }) => {
-  // View mode: 'split' (实物与图例双屏对照), 'diagram' (大号指法图谱), 'photo' (真实实物写真)
+  // View mode: 'split' (实物与图例双屏对照), 'diagram' (高精交互指法图谱), 'photo' (真实实物写真)
   const [viewMode, setViewMode] = useState<'split' | 'diagram' | 'photo'>('split');
   const [showAnnotations, setShowAnnotations] = useState<boolean>(true);
-  const [zoomLevel, setZoomLevel] = useState<number>(1.35);
+  const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
-  // Sound Engine & Register Selector: 'low' (低音区), 'high' (高八度), 'altissimo' (超吹音区)
+  // Sound Engine & Register Selector: 'low' (低/中八度), 'high' (高八度), 'altissimo' (超吹音区)
   const { playSaxKeyAction } = useSoundEngine();
   const [register, setRegister] = useState<SaxRegister>('low');
   const [soundMode, setSoundMode] = useState<'both' | 'tone' | 'click'>('both');
@@ -115,14 +114,9 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
       ? `${import.meta.env.BASE_URL}images/alto_saxophone_real.png`
       : `${import.meta.env.BASE_URL}images/soprano_saxophone_real.jpg`;
 
-  const realInstrumentTitle =
-    saxType === 'alto'
-      ? '经典降E中音萨克斯 (Eb Alto) 法国原厂实物写真'
-      : '旗舰降B高音萨克斯 (Bb Soprano) 经典原厂实物写真';
-
-  const handleZoomIn = () => setZoomLevel((prev) => Math.min(1.85, +(prev + 0.15).toFixed(2)));
-  const handleZoomOut = () => setZoomLevel((prev) => Math.max(1.0, +(prev - 0.15).toFixed(2)));
-  const handleResetZoom = () => setZoomLevel(1.35);
+  const handleZoomIn = () => setZoomLevel((prev) => Math.min(1.5, +(prev + 0.15).toFixed(2)));
+  const handleZoomOut = () => setZoomLevel((prev) => Math.max(0.85, +(prev - 0.15).toFixed(2)));
+  const handleResetZoom = () => setZoomLevel(1.0);
 
   // Grouped key definitions for the Interactive Keypad
   const rightHandKeys = [
@@ -157,131 +151,118 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   return (
     <div className="flex flex-col items-center justify-center select-none w-full">
       {/* ===================== Top Controls & View Switcher ===================== */}
-      <div className="flex flex-wrap items-center justify-between w-full px-1 mb-3.5 gap-2.5">
+      <div className="flex flex-wrap items-center justify-between w-full px-1 mb-3 gap-2.5">
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 font-black text-sm sm:text-base text-amber-300">
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
             {saxType === 'alto' ? '中音萨克斯 (Eb Alto · 降E调)' : '高音萨克斯 (Bb Soprano · 降B调)'}
           </span>
-          <span className="text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold px-2 py-0.5 rounded-full">
-            已放大 {Math.round(zoomLevel * 100)}%
+          <span className="text-[11px] text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-medium hidden sm:inline-block">
+            {saxType === 'alto' ? '实音低大六度 (移调 -9 半音)' : '实音低大二度 (移调 -2 半音)'}
           </span>
         </div>
 
-        {/* View Mode & Zoom Preset Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Zoom Buttons */}
-          <div className="flex items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800 text-xs">
-            <button
-              onClick={handleZoomOut}
-              className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer"
-              title="缩小图例"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleResetZoom}
-              className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer"
-              title="恢复推荐大小 (135%)"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleZoomIn}
-              className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer"
-              title="放大图例"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* View Mode Switcher */}
-          <div className="flex items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800 text-xs font-bold">
-            <button
-              onClick={() => setViewMode('split')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'split'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="实物照片与指法图并排对照"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>真琴与按键对照</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode('diagram')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'diagram'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="超大号交互按键图谱"
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>交互按键图</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode('photo')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'photo'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="真实原琴超清写真"
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>原琴写真</span>
-            </button>
-          </div>
+        {/* View Mode Switcher */}
+        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button
+            onClick={() => setViewMode('split')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === 'split'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>双屏对照</span>
+          </button>
+          <button
+            onClick={() => setViewMode('photo')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === 'photo'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>真实写真</span>
+          </button>
+          <button
+            onClick={() => setViewMode('diagram')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === 'diagram'
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>高精指法图</span>
+          </button>
         </div>
       </div>
 
-      {/* ===================== 八度与超吹音区切换栏 (Dedicated Register Selector) ===================== */}
-      <div className="w-full mb-3.5 p-3 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-amber-500/35 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xl">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-amber-300 text-xs flex items-center gap-1.5 mr-1">
-            <Music className="w-4 h-4 text-amber-400" />
-            试听发音音区:
+      {/* Sub-bar: Zoom Controls + Register Switcher + Sound Engine Modes */}
+      <div className="w-full flex flex-wrap items-center justify-between gap-2.5 px-1 mb-3">
+        {/* Zoom controls */}
+        <div className="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 text-xs">
+          <span className="text-[11px] text-slate-400 mr-1">缩放:</span>
+          <button
+            onClick={handleZoomOut}
+            className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            title="缩小"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-[11px] font-mono text-amber-300 min-w-[36px] text-center">
+            {Math.round(zoomLevel * 100)}%
           </span>
+          <button
+            onClick={handleZoomIn}
+            className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            title="放大"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handleResetZoom}
+            className="p-1 ml-1 rounded hover:bg-slate-800 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
+            title="还原原始比例"
+          >
+            <RotateCcw className="w-3 h-3" />
+          </button>
+        </div>
 
-          {/* Register Selector: Low, High Octave, Altissimo */}
-          <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 font-bold">
+        {/* 音区快捷切换 (低音 / 高八度 / 超吹 Altissimo) */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-slate-400 hidden sm:inline-block">试听音区:</span>
+          <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[11px]">
             <button
               onClick={() => setRegister('low')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
                 register === 'low'
-                  ? 'bg-sky-500 text-slate-950 font-black shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                  : 'text-slate-400 hover:text-amber-300'
               }`}
-              title="标准基音音域 (低音 C4 到中音 C5)"
             >
-              <span>低/中八度</span>
+              低/中八度
             </button>
-
             <button
               onClick={() => setRegister('high')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors cursor-pointer ${
                 register === 'high'
                   ? 'bg-amber-500 text-slate-950 font-black shadow-md'
                   : 'text-slate-400 hover:text-amber-300'
               }`}
-              title="高八度音域 (八度高音键配合 D5 到 C6)"
             >
-              <Zap className="w-3.5 h-3.5 text-amber-950 fill-current" />
+              <Zap className="w-3 h-3 fill-current" />
               <span>高八度 (+8ve)</span>
             </button>
-
             <button
               onClick={() => setRegister('altissimo')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors cursor-pointer ${
                 register === 'altissimo'
                   ? 'bg-rose-500 text-white font-black shadow-md animate-pulse'
                   : 'text-slate-400 hover:text-rose-300'
               }`}
-              title="超吹音域 (Altissimo 裂帛超高音 D6 到 A6+)"
             >
               <Flame className="w-3.5 h-3.5 text-amber-300 fill-current" />
               <span>超吹 (Altissimo)</span>
@@ -297,7 +278,6 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
               className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                 soundMode === 'both' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
-              title="羊皮垫机械键音 + 萨克斯真声"
             >
               键音+乐音
             </button>
@@ -306,7 +286,6 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
               className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                 soundMode === 'tone' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
-              title="仅萨克斯管乐音色"
             >
               仅乐音
             </button>
@@ -315,7 +294,6 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
               className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                 soundMode === 'click' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
-              title="仅机械按键皮革闭音"
             >
               仅机械声
             </button>
@@ -336,7 +314,7 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
       </div>
 
       {/* ===================== Real-time Sound & Pitch Feedback Banner ===================== */}
-      <div className="w-full mb-3 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800/90 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div className="w-full mb-3 px-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800/90 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2">
           {lastPlayedKey ? (
             <div className="flex items-center gap-2 text-amber-300 font-bold">
@@ -359,24 +337,25 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
           ) : (
             <span className="text-slate-400 text-[11px] flex items-center gap-1.5">
               <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              点击右侧按键矩阵、SVG模型或实物照片任意按钮，即可即时发声并校对中音/高音真实音准与高八度/超吹音效
+              已精准校对引线起点位置，引线与按钮完美无缝相接，点击任意按钮或音孔即可即时试听
             </span>
           )}
         </div>
         <div className="text-[11px] text-amber-400/90 font-bold hidden md:block">
-          乐器: {saxType === 'alto' ? '降E中音萨克斯 (Eb Alto)' : '降B高音萨克斯 (Bb Soprano)'}
+          当前乐器: {saxType === 'alto' ? '经典弯管中音 (Eb Alto)' : '通体直管高音 (Bb Soprano)'}
         </div>
       </div>
 
       {/* ===================== Main Instrument Display Box ===================== */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch justify-center p-4 sm:p-6 rounded-2xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border border-slate-800/90 shadow-2xl">
-        {/* ==================== 1. 真实萨克斯实物写真展示区 ==================== */}
+      <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch justify-center p-3 sm:p-5 rounded-2xl bg-[#070b14] border border-slate-800/80 shadow-2xl">
+        {/* ==================== 1. 真实乐器实拍照 (引线起点与按键无缝对接) ==================== */}
         {(viewMode === 'split' || viewMode === 'photo') && (
           <div
-            className={`relative flex flex-col items-center justify-between rounded-2xl p-4 sm:p-6 bg-slate-950/95 border border-amber-500/25 shadow-2xl overflow-hidden ${
+            className={`relative flex flex-col justify-between rounded-2xl p-4 sm:p-5 bg-[#0a0f1d] border border-amber-500/20 shadow-2xl overflow-hidden ${
               viewMode === 'split' ? 'md:col-span-6' : 'md:col-span-12 w-full max-w-3xl mx-auto'
             }`}
           >
+            {/* Header */}
             <div className="w-full flex items-center justify-between mb-3 px-1 border-b border-slate-800/80 pb-2">
               <span className="text-xs sm:text-sm font-bold text-amber-400 flex items-center gap-1.5">
                 <Camera className="w-4 h-4 text-amber-400" />
@@ -385,248 +364,835 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowAnnotations(!showAnnotations)}
-                  className="text-[11px] text-slate-400 hover:text-amber-300 flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 cursor-pointer"
+                  className="text-[11px] text-slate-300 hover:text-amber-300 flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 cursor-pointer shadow-sm"
                 >
-                  <Eye className="w-3 h-3" />
-                  {showAnnotations ? '隐藏标记' : '显示标记'}
+                  <Eye className="w-3 h-3 text-slate-400" />
+                  <span>{showAnnotations ? '隐藏标记' : '显示标记'}</span>
                 </button>
               </div>
             </div>
 
+            {/* Top anatomical pill tags */}
+            {showAnnotations && (
+              <div className="w-full flex items-center justify-between px-1 mb-2">
+                <span className="bg-slate-950/85 text-amber-300 border border-amber-500/40 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm">
+                  ① 泛音弯颈 / 八度音孔
+                </span>
+                <span className="bg-slate-950/85 text-rose-300 border border-rose-500/40 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm">
+                  🔥 超吹前F键 / 掌键区
+                </span>
+              </div>
+            )}
+
             {/* Real Instrument Photo Container */}
-            <div className="relative group flex items-center justify-center w-full min-h-[540px] sm:min-h-[660px] lg:min-h-[720px] py-4 overflow-hidden">
-              <div className="absolute inset-0 bg-radial from-amber-500/20 via-amber-900/10 to-transparent pointer-events-none blur-3xl" />
+            <div className="relative group flex items-center justify-center w-full min-h-[540px] sm:min-h-[640px] py-2 overflow-hidden">
+              <div className="absolute inset-0 bg-radial from-amber-500/15 via-amber-950/10 to-transparent pointer-events-none blur-3xl" />
 
               <div
-                className="relative transition-transform duration-200 flex items-center justify-center"
+                className="relative transition-transform duration-200 inline-block mx-auto select-none"
                 style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
               >
+                {/* Saxophone Real Photo (Strictly bounded) */}
                 <img
                   src={realPhotoSrc}
-                  alt={realInstrumentTitle}
+                  alt={saxType === 'alto' ? '中音萨克斯实拍照' : '高音萨克斯实拍照'}
                   referrerPolicy="no-referrer"
-                  className="relative z-10 max-h-[600px] sm:max-h-[700px] lg:max-h-[740px] w-auto object-contain drop-shadow-[0_20px_45px_rgba(245,158,11,0.4)]"
+                  className="block max-h-[520px] sm:max-h-[600px] w-auto mx-auto object-contain drop-shadow-[0_20px_40px_rgba(245,158,11,0.35)]"
                 />
 
-                {/* Hotspots for ALL Keys across Real Photo with high precision */}
-                <div className="absolute inset-0 z-20 pointer-events-auto">
-                  {/* Octave Key Hotspot (高八度试听) */}
-                  <button
-                    onClick={() => handleKeyInteraction('key_octave', 'high')}
-                    className="absolute top-[8%] left-[45%] -translate-x-1/2 px-2.5 py-1 rounded-full bg-amber-500/50 hover:bg-amber-400 border border-amber-200 shadow-xl text-[10px] font-black text-slate-950 transition-all hover:scale-125 cursor-pointer flex items-center gap-1"
-                    title="点击试听八度高音泛音孔音效"
+                {/* 
+                  100% 同步坐标系的精密引线与按键图层
+                  viewBox="0 0 526 554" 与 alto_saxophone_real.png 的 526x554 原生像素完全 1:1 映射！
+                  引线起点坐标与每个按钮的外边缘数学保证完全贴合，绝不脱节！
+                */}
+                {showAnnotations && saxType === 'alto' && (
+                  <svg
+                    viewBox="0 0 526 554"
+                    className="absolute inset-0 w-full h-full pointer-events-auto z-20"
                   >
-                    <Zap className="w-3 h-3 fill-current text-amber-950" />
-                    <span>8度泛音</span>
-                  </button>
+                    <defs>
+                      <filter id="photoKeyShadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.8" />
+                      </filter>
+                    </defs>
 
-                  {/* Left Hand Palm Keys Hotspots (左手掌键群 D, Eb, F) */}
-                  <button
-                    onClick={() => handleKeyInteraction('key_palm_d', 'altissimo')}
-                    className="absolute top-[16%] left-[34%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-500/60 hover:bg-rose-400 border border-rose-200 shadow-md text-[9px] font-bold text-white transition-all hover:scale-120 cursor-pointer"
-                    title="左手掌键 D"
-                  >
-                    掌D
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_palm_eb', 'altissimo')}
-                    className="absolute top-[20%] left-[33%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-500/60 hover:bg-rose-400 border border-rose-200 shadow-md text-[9px] font-bold text-white transition-all hover:scale-120 cursor-pointer"
-                    title="左手掌键 Eb"
-                  >
-                    掌Eb
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_palm_f', 'altissimo')}
-                    className="absolute top-[24%] left-[32%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-500/60 hover:bg-rose-400 border border-rose-200 shadow-md text-[9px] font-bold text-white transition-all hover:scale-120 cursor-pointer"
-                    title="左手掌键 F"
-                  >
-                    掌F
-                  </button>
+                    {/* ===================== 1. 八度泛音键 (Neck Octave Key) ===================== */}
+                    {/* 引线: 从按钮右边缘 (100, 78) 出发 -> 拐点 (135, 78) -> 八度音孔 (165, 130) */}
+                    <path
+                      d="M 100,78 L 135,78 L 165,130"
+                      fill="none"
+                      stroke="#fbbf24"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="165" cy="130" r="3.5" fill="#fbbf24" stroke="#0f172a" strokeWidth="1" />
+                    {/* 按钮: 位于 (18, 65)，宽 82，右侧正好是 x=100，与引线起点无缝连接 */}
+                    <g
+                      onClick={() => handleKeyInteraction('key_octave', 'high')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="18"
+                        y="65"
+                        width="82"
+                        height="26"
+                        rx="13"
+                        fill={isKeyActive('key_octave') ? '#f59e0b' : '#d97706'}
+                        stroke="#fef08a"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="59"
+                        y="78"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        fill="#0f172a"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        ⚡ 8度泛音
+                      </text>
+                    </g>
 
-                  {/* Front F / Altissimo Hotspot (超吹前F) */}
-                  <button
-                    onClick={() => handleKeyInteraction('key_front_f', 'altissimo')}
-                    className="absolute top-[21%] left-[48%] -translate-x-1/2 px-2.5 py-1 rounded-full bg-rose-500/60 hover:bg-rose-500 border border-rose-300 shadow-xl text-[10px] font-black text-white transition-all hover:scale-125 cursor-pointer flex items-center gap-1 animate-pulse"
-                    title="点击试听超吹前F叉键音效"
-                  >
-                    <Flame className="w-3 h-3 fill-current text-amber-300" />
-                    <span>前F超吹</span>
-                  </button>
+                    {/* ===================== 2. 左手掌键群: 掌D, 掌Eb, 掌F ===================== */}
+                    {/* 掌D: 按钮 (18, 105, 54, 25), 右侧 x=72, y=117.5 */}
+                    <path
+                      d="M 72,117.5 L 118,117.5 L 154,145"
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="154" cy="145" r="3.5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_palm_d', 'altissimo')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="18"
+                        y="105"
+                        width="54"
+                        height="25"
+                        rx="12.5"
+                        fill={isKeyActive('key_palm_d') ? '#f43f5e' : '#be185d'}
+                        stroke="#fbcfe8"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="45"
+                        y="117.5"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        掌D
+                      </text>
+                    </g>
 
-                  {/* Left Hand Upper Keys Hotspots (1, 2, 3) */}
-                  <button
-                    onClick={() => handleKeyInteraction('key_lh1')}
-                    className={`absolute top-[28%] left-[48%] -translate-x-1/2 px-2 py-0.5 rounded-full border shadow-lg text-[10px] font-bold transition-all hover:scale-115 cursor-pointer ${
-                      isKeyActive('key_lh1')
-                        ? 'bg-amber-400 text-slate-950 border-white'
-                        : 'bg-sky-500/40 hover:bg-sky-400 text-sky-100 border-sky-300'
-                    }`}
-                  >
-                    1(B)
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_lh2')}
-                    className={`absolute top-[35%] left-[48%] -translate-x-1/2 px-2 py-0.5 rounded-full border shadow-lg text-[10px] font-bold transition-all hover:scale-115 cursor-pointer ${
-                      isKeyActive('key_lh2')
-                        ? 'bg-amber-400 text-slate-950 border-white'
-                        : 'bg-sky-500/40 hover:bg-sky-400 text-sky-100 border-sky-300'
-                    }`}
-                  >
-                    2(A)
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_lh3')}
-                    className={`absolute top-[42%] left-[48%] -translate-x-1/2 px-2 py-0.5 rounded-full border shadow-lg text-[10px] font-bold transition-all hover:scale-115 cursor-pointer ${
-                      isKeyActive('key_lh3')
-                        ? 'bg-amber-400 text-slate-950 border-white'
-                        : 'bg-sky-500/40 hover:bg-sky-400 text-sky-100 border-sky-300'
-                    }`}
-                  >
-                    3(G)
-                  </button>
+                    {/* 掌Eb: 按钮 (18, 142, 54, 25), 右侧 x=72, y=154.5 */}
+                    <path
+                      d="M 72,154.5 L 118,154.5 L 154,168"
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="154" cy="168" r="3.5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_palm_eb', 'altissimo')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="18"
+                        y="142"
+                        width="54"
+                        height="25"
+                        rx="12.5"
+                        fill={isKeyActive('key_palm_eb') ? '#f43f5e' : '#be185d'}
+                        stroke="#fbcfe8"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="45"
+                        y="154.5"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        掌Eb
+                      </text>
+                    </g>
 
-                  {/* Right Hand Side Keys Hotspots (右手侧键群：侧C、侧Bb、高F#) */}
-                  <button
-                    onClick={() => handleKeyInteraction('key_side_c')}
-                    className="absolute top-[32%] left-[64%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-amber-500/50 hover:bg-amber-400 border border-amber-300 shadow-md text-[9px] font-bold text-slate-950 transition-all hover:scale-120 cursor-pointer"
-                    title="右手侧C键"
-                  >
-                    侧C
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_side_bb')}
-                    className="absolute top-[37%] left-[65%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-amber-500/50 hover:bg-amber-400 border border-amber-300 shadow-md text-[9px] font-bold text-slate-950 transition-all hover:scale-120 cursor-pointer"
-                    title="右手侧Bb键"
-                  >
-                    侧Bb
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_high_fis', 'altissimo')}
-                    className="absolute top-[42%] left-[66%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-500/60 hover:bg-rose-400 border border-rose-300 shadow-md text-[9px] font-bold text-white transition-all hover:scale-120 cursor-pointer"
-                    title="右手高音F#键"
-                  >
-                    高F#
-                  </button>
+                    {/* 掌F: 按钮 (18, 179, 54, 25), 右侧 x=72, y=191.5 */}
+                    <path
+                      d="M 72,191.5 L 118,191.5 L 156,188"
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="156" cy="188" r="3.5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_palm_f', 'altissimo')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="18"
+                        y="179"
+                        width="54"
+                        height="25"
+                        rx="12.5"
+                        fill={isKeyActive('key_palm_f') ? '#f43f5e' : '#be185d'}
+                        stroke="#fbcfe8"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="45"
+                        y="191.5"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        掌F
+                      </text>
+                    </g>
 
-                  {/* Left Hand Spatula Keys (G#, C#, B, Bb) */}
-                  <button
-                    onClick={() => handleKeyInteraction('key_lh_gis')}
-                    className="absolute top-[40%] left-[34%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-indigo-500/50 hover:bg-indigo-400 border border-indigo-300 shadow-md text-[9px] font-bold text-indigo-100 transition-all hover:scale-120 cursor-pointer"
-                  >
-                    G#
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_lh_low_b')}
-                    className="absolute top-[45%] left-[33%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-indigo-500/50 hover:bg-indigo-400 border border-indigo-300 shadow-md text-[9px] font-bold text-indigo-100 transition-all hover:scale-120 cursor-pointer"
-                  >
-                    低音B
-                  </button>
+                    {/* ===================== 3. 左手小指变音台 G# ===================== */}
+                    {/* G#: 按钮 (18, 235, 52, 25), 右侧 x=70, y=247.5 */}
+                    <path
+                      d="M 70,247.5 L 115,247.5 L 148,262"
+                      fill="none"
+                      stroke="#818cf8"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="148" cy="262" r="3.5" fill="#818cf8" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_lh_gis')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="18"
+                        y="235"
+                        width="52"
+                        height="25"
+                        rx="12.5"
+                        fill={isKeyActive('key_lh_gis') ? '#6366f1' : '#4338ca'}
+                        stroke="#c7d2fe"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="44"
+                        y="247.5"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        G#
+                      </text>
+                    </g>
 
-                  {/* Right Hand Lower Keys Hotspots (右手主键：4, 5, 6) */}
-                  <button
-                    onClick={() => handleKeyInteraction('key_rh1')}
-                    className={`absolute top-[52%] left-[48%] -translate-x-1/2 px-2 py-0.5 rounded-full border shadow-lg text-[10px] font-bold transition-all hover:scale-115 cursor-pointer ${
-                      isKeyActive('key_rh1')
-                        ? 'bg-amber-400 text-slate-950 border-white'
-                        : 'bg-emerald-500/40 hover:bg-emerald-400 text-emerald-100 border-emerald-300'
-                    }`}
-                  >
-                    4(F)
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_rh2')}
-                    className={`absolute top-[59%] left-[48%] -translate-x-1/2 px-2 py-0.5 rounded-full border shadow-lg text-[10px] font-bold transition-all hover:scale-115 cursor-pointer ${
-                      isKeyActive('key_rh2')
-                        ? 'bg-amber-400 text-slate-950 border-white'
-                        : 'bg-emerald-500/40 hover:bg-emerald-400 text-emerald-100 border-emerald-300'
-                    }`}
-                  >
-                    5(E)
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_rh3')}
-                    className={`absolute top-[66%] left-[48%] -translate-x-1/2 px-2 py-0.5 rounded-full border shadow-lg text-[10px] font-bold transition-all hover:scale-115 cursor-pointer ${
-                      isKeyActive('key_rh3')
-                        ? 'bg-amber-400 text-slate-950 border-white'
-                        : 'bg-emerald-500/40 hover:bg-emerald-400 text-emerald-100 border-emerald-300'
-                    }`}
-                  >
-                    6(D)
-                  </button>
+                    {/* 变音台标签: (15, 272, 145, 24), 右侧 x=160 */}
+                    <g className="pointer-events-none">
+                      <rect
+                        x="15"
+                        y="272"
+                        width="145"
+                        height="24"
+                        rx="6"
+                        fill="#0b0f19"
+                        stroke="#6366f1"
+                        strokeWidth="1"
+                        opacity="0.95"
+                      />
+                      <text
+                        x="87.5"
+                        y="284"
+                        fontSize="9.5"
+                        fontWeight="bold"
+                        fill="#c7d2fe"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        className="select-none"
+                      >
+                        左手小指变音台 (G#/C#/B/Bb)
+                      </text>
+                    </g>
 
-                  {/* Low Pinky Table (Eb/C) Hotspot */}
-                  <button
-                    onClick={() => handleKeyInteraction('key_rh_eb')}
-                    className="absolute top-[71%] left-[58%] -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-500/50 hover:bg-rose-400 border border-rose-300 shadow-md text-[9px] font-bold text-white transition-all hover:scale-120 cursor-pointer"
-                    title="右手低音Eb滚轮"
+                    {/* ===================== 4. 超吹前F叉键 ===================== */}
+                    {/* 前F: 按钮 (218, 75, 88, 26), 底部中点 x=262, y=88 */}
+                    <path
+                      d="M 262,101 L 262,135 L 178,168"
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="178" cy="168" r="3.5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_front_f', 'altissimo')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="218"
+                        y="75"
+                        width="88"
+                        height="26"
+                        rx="13"
+                        fill={isKeyActive('key_front_f') ? '#e11d48' : '#be123c'}
+                        stroke="#fda4af"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="262"
+                        y="88"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        🔥 前F超吹
+                      </text>
+                    </g>
+
+                    {/* ===================== 5. 右手高音侧键群: 侧C, 侧Bb, 高F# ===================== */}
+                    {/* 侧C: 按钮 (360, 195, 54, 25), 左侧起点正好是 x=360, y=207.5 */}
+                    <path
+                      d="M 360,207.5 L 290,207.5 L 215,228"
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="215" cy="228" r="3.5" fill="#f59e0b" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_side_c')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="360"
+                        y="195"
+                        width="54"
+                        height="25"
+                        rx="12.5"
+                        fill={isKeyActive('key_side_c') ? '#f59e0b' : '#b45309'}
+                        stroke="#fef08a"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="387"
+                        y="207.5"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        侧C
+                      </text>
+                    </g>
+
+                    {/* 侧Bb: 按钮 (360, 232, 54, 25), 左侧起点 x=360, y=244.5 */}
+                    <path
+                      d="M 360,244.5 L 290,244.5 L 216,252"
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="216" cy="252" r="3.5" fill="#f59e0b" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_side_bb')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="360"
+                        y="232"
+                        width="54"
+                        height="25"
+                        rx="12.5"
+                        fill={isKeyActive('key_side_bb') ? '#f59e0b' : '#b45309'}
+                        stroke="#fef08a"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="387"
+                        y="244.5"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        侧Bb
+                      </text>
+                    </g>
+
+                    {/* 高F#: 按钮 (360, 269, 54, 25), 左侧起点 x=360, y=281.5 */}
+                    <path
+                      d="M 360,281.5 L 290,281.5 L 218,276"
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="218" cy="276" r="3.5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_high_fis', 'altissimo')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="360"
+                        y="269"
+                        width="54"
+                        height="25"
+                        rx="12.5"
+                        fill={isKeyActive('key_high_fis') ? '#f43f5e' : '#be185d'}
+                        stroke="#fbcfe8"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="387"
+                        y="281.5"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        高F#
+                      </text>
+                    </g>
+
+                    {/* 侧键标签: (330, 308, 155, 24) */}
+                    <g className="pointer-events-none">
+                      <rect
+                        x="330"
+                        y="308"
+                        width="155"
+                        height="24"
+                        rx="6"
+                        fill="#0b0f19"
+                        stroke="#f59e0b"
+                        strokeWidth="1"
+                        opacity="0.95"
+                      />
+                      <text
+                        x="407.5"
+                        y="320"
+                        fontSize="9.5"
+                        fontWeight="bold"
+                        fill="#fed7aa"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        className="select-none"
+                      >
+                        右手高音侧键 (侧C/侧Bb/高F#)
+                      </text>
+                    </g>
+
+                    {/* ===================== 6. 低音 Eb 与 低音 C ===================== */}
+                    {/* Eb: 按钮 (360, 390, 52, 25), 左侧起点 x=360, y=402.5 */}
+                    <path
+                      d="M 360,402.5 L 290,402.5 L 224,416"
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="224" cy="416" r="3.5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_rh_eb')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="360"
+                        y="390"
+                        width="52"
+                        height="25"
+                        rx="12.5"
+                        fill={isKeyActive('key_rh_eb') ? '#f43f5e' : '#be123c'}
+                        stroke="#fda4af"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="386"
+                        y="402.5"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        Eb
+                      </text>
+                    </g>
+
+                    {/* 低音C: 按钮 (360, 428, 62, 26), 左侧起点 x=360, y=441 */}
+                    <path
+                      d="M 360,441 L 290,441 L 226,446"
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth="1.6"
+                      strokeDasharray="3.5 2.5"
+                    />
+                    <circle cx="226" cy="446" r="3.5" fill="#f43f5e" stroke="#0f172a" strokeWidth="1" />
+                    <g
+                      onClick={() => handleKeyInteraction('key_rh_c')}
+                      className="cursor-pointer group"
+                    >
+                      <rect
+                        x="360"
+                        y="428"
+                        width="62"
+                        height="26"
+                        rx="13"
+                        fill={isKeyActive('key_rh_c') ? '#f43f5e' : '#be123c'}
+                        stroke="#fda4af"
+                        strokeWidth="1.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]"
+                      />
+                      <text
+                        x="391"
+                        y="441"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        低音C
+                      </text>
+                    </g>
+
+                    {/* ===================== 7. 中轴主音孔: 1-2-3 (上把位) 与 4-5-6 (下把位) ===================== */}
+                    {/* 1(B) */}
+                    <g
+                      onClick={() => handleKeyInteraction('key_lh1')}
+                      className="cursor-pointer group"
+                    >
+                      <circle
+                        cx="178"
+                        cy="202"
+                        r="16"
+                        fill={isKeyActive('key_lh1') ? '#fbbf24' : '#f59e0b'}
+                        stroke="#fef08a"
+                        strokeWidth="2.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[3px]"
+                      />
+                      <circle cx="178" cy="202" r="12" fill="none" stroke="#78350f" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="178"
+                        y="202"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#0f172a"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        1(B)
+                      </text>
+                    </g>
+
+                    {/* 2(A) */}
+                    <g
+                      onClick={() => handleKeyInteraction('key_lh2')}
+                      className="cursor-pointer group"
+                    >
+                      <circle
+                        cx="180"
+                        cy="240"
+                        r="16"
+                        fill={isKeyActive('key_lh2') ? '#fbbf24' : '#f59e0b'}
+                        stroke="#fef08a"
+                        strokeWidth="2.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[3px]"
+                      />
+                      <circle cx="180" cy="240" r="12" fill="none" stroke="#78350f" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="180"
+                        y="240"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#0f172a"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        2(A)
+                      </text>
+                    </g>
+
+                    {/* 3(G) */}
+                    <g
+                      onClick={() => handleKeyInteraction('key_lh3')}
+                      className="cursor-pointer group"
+                    >
+                      <circle
+                        cx="182"
+                        cy="278"
+                        r="16"
+                        fill={isKeyActive('key_lh3') ? '#38bdf8' : '#0284c7'}
+                        stroke="#bae6fd"
+                        strokeWidth="2.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[3px]"
+                      />
+                      <circle cx="182" cy="278" r="12" fill="none" stroke="#0369a1" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="182"
+                        y="278"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        3(G)
+                      </text>
+                    </g>
+
+                    {/* 4(F) */}
+                    <g
+                      onClick={() => handleKeyInteraction('key_rh1')}
+                      className="cursor-pointer group"
+                    >
+                      <circle
+                        cx="185"
+                        cy="324"
+                        r="16"
+                        fill={isKeyActive('key_rh1') ? '#34d399' : '#059669'}
+                        stroke="#a7f3d0"
+                        strokeWidth="2.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[3px]"
+                      />
+                      <circle cx="185" cy="324" r="12" fill="none" stroke="#047857" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="185"
+                        y="324"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        4(F)
+                      </text>
+                    </g>
+
+                    {/* 5(E) */}
+                    <g
+                      onClick={() => handleKeyInteraction('key_rh2')}
+                      className="cursor-pointer group"
+                    >
+                      <circle
+                        cx="187"
+                        cy="364"
+                        r="16"
+                        fill={isKeyActive('key_rh2') ? '#34d399' : '#059669'}
+                        stroke="#a7f3d0"
+                        strokeWidth="2.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[3px]"
+                      />
+                      <circle cx="187" cy="364" r="12" fill="none" stroke="#047857" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="187"
+                        y="364"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        5(E)
+                      </text>
+                    </g>
+
+                    {/* 6(D) */}
+                    <g
+                      onClick={() => handleKeyInteraction('key_rh3')}
+                      className="cursor-pointer group"
+                    >
+                      <circle
+                        cx="189"
+                        cy="404"
+                        r="16"
+                        fill={isKeyActive('key_rh3') ? '#34d399' : '#059669'}
+                        stroke="#a7f3d0"
+                        strokeWidth="2.5"
+                        filter="url(#photoKeyShadow)"
+                        className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[3px]"
+                      />
+                      <circle cx="189" cy="404" r="12" fill="none" stroke="#047857" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="189"
+                        y="404"
+                        fontSize="11"
+                        fontWeight="900"
+                        fill="#ffffff"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        pointerEvents="none"
+                        className="select-none"
+                      >
+                        6(D)
+                      </text>
+                    </g>
+                  </svg>
+                )}
+
+                {/* Soprano 写真标注 */}
+                {showAnnotations && saxType === 'soprano' && (
+                  <svg
+                    viewBox="0 0 400 650"
+                    className="absolute inset-0 w-full h-full pointer-events-auto z-20"
                   >
-                    Eb
-                  </button>
-                  <button
-                    onClick={() => handleKeyInteraction('key_rh_c')}
-                    className="absolute top-[76%] left-[58%] -translate-x-1/2 px-2.5 py-1 rounded-full bg-rose-500/50 hover:bg-rose-400 border border-rose-300 shadow-lg text-[10px] font-bold text-rose-100 transition-all hover:scale-115 cursor-pointer"
-                    title="右手低音C键"
-                  >
-                    低音C
-                  </button>
-                </div>
+                    {/* 八度键 */}
+                    <path d="M 85,75 L 140,75 L 180,80" fill="none" stroke="#fbbf24" strokeWidth="1.6" strokeDasharray="3 2" />
+                    <circle cx="180" cy="80" r="3.5" fill="#fbbf24" stroke="#000" strokeWidth="1" />
+                    <g onClick={() => handleKeyInteraction('key_octave', 'high')} className="cursor-pointer group">
+                      <rect x="25" y="62" width="60" height="26" rx="13" fill="#d97706" stroke="#fef08a" strokeWidth="1.5" className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]" />
+                      <text x="55" y="75" fontSize="10.5" fontWeight="900" fill="#0f172a" textAnchor="middle" dominantBaseline="central" pointerEvents="none" className="select-none">8(八度)</text>
+                    </g>
+
+                    {/* 侧C */}
+                    <path d="M 290,165 L 240,165 L 205,165" fill="none" stroke="#f59e0b" strokeWidth="1.6" strokeDasharray="3 2" />
+                    <circle cx="205" cy="165" r="3.5" fill="#f59e0b" stroke="#000" strokeWidth="1" />
+                    <g onClick={() => handleKeyInteraction('key_side_c')} className="cursor-pointer group">
+                      <rect x="290" y="152" width="50" height="26" rx="13" fill="#b45309" stroke="#fef08a" strokeWidth="1.5" className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]" />
+                      <text x="315" y="165" fontSize="11" fontWeight="900" fill="#ffffff" textAnchor="middle" dominantBaseline="central" pointerEvents="none" className="select-none">侧C</text>
+                    </g>
+
+                    {/* 侧Bb */}
+                    <path d="M 290,205 L 240,205 L 205,205" fill="none" stroke="#f59e0b" strokeWidth="1.6" strokeDasharray="3 2" />
+                    <circle cx="205" cy="205" r="3.5" fill="#f59e0b" stroke="#000" strokeWidth="1" />
+                    <g onClick={() => handleKeyInteraction('key_side_bb')} className="cursor-pointer group">
+                      <rect x="290" y="192" width="50" height="26" rx="13" fill="#b45309" stroke="#fef08a" strokeWidth="1.5" className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2px]" />
+                      <text x="315" y="205" fontSize="11" fontWeight="900" fill="#ffffff" textAnchor="middle" dominantBaseline="central" pointerEvents="none" className="select-none">侧Bb</text>
+                    </g>
+
+                    {/* 1, 2, 3, 4, 5, 6 主键 */}
+                    {[
+                      { id: 'key_lh1', label: '1(B)', y: 150 },
+                      { id: 'key_lh2', label: '2(A)', y: 195 },
+                      { id: 'key_lh3', label: '3(G)', y: 240 },
+                      { id: 'key_rh1', label: '4(F)', y: 295 },
+                      { id: 'key_rh2', label: '5(E)', y: 340 },
+                      { id: 'key_rh3', label: '6(D)', y: 385 },
+                    ].map((k) => (
+                      <g key={k.id} onClick={() => handleKeyInteraction(k.id)} className="cursor-pointer group">
+                        <circle cx="195" cy={k.y} r="15" fill={isKeyActive(k.id) ? '#fbbf24' : '#f59e0b'} stroke="#fef08a" strokeWidth="2" className="transition-all duration-150 group-hover:brightness-125 group-hover:stroke-white group-hover:stroke-[2.5px]" />
+                        <text x="195" y={k.y} fontSize="10.5" fontWeight="900" fill="#0f172a" textAnchor="middle" dominantBaseline="central" pointerEvents="none" className="select-none">{k.label}</text>
+                      </g>
+                    ))}
+                  </svg>
+                )}
               </div>
-
-              {/* Anatomy Labels */}
-              {showAnnotations && (
-                <div className="absolute inset-0 pointer-events-none flex flex-col justify-between py-6 px-2 sm:px-4 z-10">
-                  <div className="flex justify-between items-start">
-                    <span className="bg-slate-900/90 text-amber-300 border border-amber-500/40 text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                      ① 泛音弯颈 / 八度音孔
-                    </span>
-                    <span className="bg-slate-900/90 text-rose-300 border border-rose-500/40 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                      🔥 超吹前F键 / 掌键区
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="bg-slate-900/90 text-indigo-300 border border-indigo-500/40 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-lg backdrop-blur-sm">
-                      左手小指变音台 (G#/C#/B/Bb)
-                    </span>
-                    <span className="bg-slate-900/90 text-amber-300 border border-amber-500/40 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-lg backdrop-blur-sm">
-                      右手高音侧键 (侧C/侧Bb/高F#)
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-end">
-                    <span className="bg-slate-900/90 text-emerald-300 border border-emerald-500/40 text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-lg backdrop-blur-sm">
-                      ③ 右手下把位 (4·5·6孔)
-                    </span>
-                    <span className="bg-slate-900/90 text-amber-400 border border-amber-500/50 text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                      ④ 法式金光喇叭口 (Bell)
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div className="w-full mt-3 p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-center">
-              <p className="text-xs text-amber-300 font-semibold mb-0.5">
+            {/* Bottom Anatomy Pills */}
+            {showAnnotations && (
+              <div className="w-full flex items-center justify-between px-1 mt-2">
+                <span className="bg-slate-950/85 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm">
+                  ③ 右手下把位 (4-5-6孔)
+                </span>
+                <span className="bg-slate-950/85 text-amber-400 border border-amber-500/50 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md backdrop-blur-sm">
+                  ④ 法式金光喇叭口 (Bell)
+                </span>
+              </div>
+            )}
+
+            {/* Bottom Info Box */}
+            <div className="w-full mt-3 p-3 rounded-xl bg-slate-950/90 border border-amber-500/20 text-center">
+              <p className="text-xs text-amber-400 font-bold mb-0.5">
                 真实乐器真琴图例（高光黄铜与天然珍珠贝壳键位 · 仿参考图实物）
               </p>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                原琴实物拍摄，可清晰看清琴身弧度、音孔间距、连杆轴组与喇叭口雕花。点击上方热点可体验低音、高八度与超吹发声。
+                原琴实物拍摄，引线起点与按键边缘 100% 精确贴合。点击上方热点可体验低音、高八度与超吹发声。
               </p>
             </div>
           </div>
         )}
 
-        {/* ==================== 2. 高精交互指法键位图 (严格对照用户参考照片设计) ==================== */}
+        {/* ==================== 2. 高精交互指法键位图 (引线起点与按键绝对贴合) ==================== */}
         {(viewMode === 'split' || viewMode === 'diagram') && (
           <div
-            className={`flex flex-col items-center justify-between rounded-2xl p-4 sm:p-6 bg-slate-950/95 border border-slate-800/90 shadow-2xl ${
+            className={`flex flex-col justify-between rounded-2xl p-4 sm:p-5 bg-[#0a0f1d] border border-slate-800/80 shadow-2xl ${
               viewMode === 'split' ? 'md:col-span-6' : 'md:col-span-12 w-full max-w-3xl mx-auto'
             }`}
           >
+            {/* Header */}
             <div className="w-full flex items-center justify-between mb-3 px-1 border-b border-slate-800/80 pb-2">
               <span className="font-bold text-xs sm:text-sm text-slate-200 flex items-center gap-1.5">
                 <Sliders className="w-4 h-4 text-amber-400" />
-                高精交互指法图（包含掌键、前F超吹键与高八度键）
+                高精交互指法图 (包含掌键、前F超吹键与高八度键)
               </span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[10px] text-rose-300 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded font-bold">
                   含超吹键位
                 </span>
@@ -637,599 +1203,820 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
             </div>
 
             {/* 大号超清 SVG 萨克斯模型 */}
-            <div className="w-full flex items-center justify-center p-2 overflow-hidden min-h-[540px] sm:min-h-[660px] lg:min-h-[720px]">
+            <div className="w-full flex items-center justify-center p-1 overflow-hidden min-h-[540px] sm:min-h-[640px]">
               <div
                 className="w-full flex items-center justify-center transition-transform duration-200"
-                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center top' }}
+                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
               >
                 <svg
                   width="540"
-                  height="780"
-                  viewBox="0 0 320 460"
-                  className="w-full max-w-[500px] sm:max-w-[560px] h-auto drop-shadow-[0_18px_40px_rgba(0,0,0,0.95)] transition-all duration-300 touch-manipulation cursor-pointer"
+                  height="740"
+                  viewBox="0 0 380 470"
+                  className="w-full max-w-[500px] sm:max-w-[540px] h-auto drop-shadow-[0_16px_36px_rgba(0,0,0,0.95)] transition-all duration-300 touch-manipulation"
                 >
                   <defs>
-                    {/* 参考图 1/2 真实的金色高光漆面材质渐变 */}
-                    <linearGradient id="photoSaxBrassGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#713f12" />
-                      <stop offset="12%" stopColor="#b45309" />
-                      <stop offset="30%" stopColor="#f59e0b" />
-                      <stop offset="48%" stopColor="#fef08a" />
-                      <stop offset="56%" stopColor="#ffffff" />
-                      <stop offset="68%" stopColor="#fbbf24" />
-                      <stop offset="86%" stopColor="#b45309" />
+                    {/* 金色金属高光质感渐变 */}
+                    <linearGradient id="altoBrassGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#78350f" />
+                      <stop offset="15%" stopColor="#b45309" />
+                      <stop offset="35%" stopColor="#f59e0b" />
+                      <stop offset="50%" stopColor="#fef08a" />
+                      <stop offset="65%" stopColor="#fbbf24" />
+                      <stop offset="85%" stopColor="#b45309" />
                       <stop offset="100%" stopColor="#713f12" />
                     </linearGradient>
 
-                    {/* 参考图喇叭口立体金光渐变 */}
-                    <linearGradient id="photoBellGrad" x1="0%" y1="100%" x2="90%" y2="0%">
-                      <stop offset="0%" stopColor="#713f12" />
-                      <stop offset="20%" stopColor="#b45309" />
-                      <stop offset="42%" stopColor="#fbbf24" />
-                      <stop offset="58%" stopColor="#fef08a" />
-                      <stop offset="78%" stopColor="#f59e0b" />
-                      <stop offset="100%" stopColor="#78350f" />
+                    {/* 喇叭口紫红科技声学渐变 */}
+                    <linearGradient id="altoBellBodyGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#3b0764" />
+                      <stop offset="40%" stopColor="#581c87" />
+                      <stop offset="70%" stopColor="#701a75" />
+                      <stop offset="100%" stopColor="#be185d" />
                     </linearGradient>
 
-                    {/* 喇叭口内部黑金声学共鸣阴影 */}
-                    <radialGradient id="photoBellInner" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="#090d16" />
-                      <stop offset="50%" stopColor="#2e1065" />
-                      <stop offset="75%" stopColor="#451a03" />
-                      <stop offset="100%" stopColor="#78350f" />
+                    {/* 喇叭口内部黑紫深邃声学腔体 */}
+                    <radialGradient id="altoBellMouth" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#030712" />
+                      <stop offset="45%" stopColor="#3b0764" />
+                      <stop offset="80%" stopColor="#701a75" />
+                      <stop offset="100%" stopColor="#d97706" />
                     </radialGradient>
 
                     {/* 白珍珠母贝按键渐变 */}
-                    <linearGradient id="photoPearlGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id="pearlKeyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#ffffff" />
-                      <stop offset="40%" stopColor="#f8fafc" />
-                      <stop offset="80%" stopColor="#e2e8f0" />
+                      <stop offset="50%" stopColor="#f8fafc" />
                       <stop offset="100%" stopColor="#cbd5e1" />
                     </linearGradient>
 
-                    {/* 闭合按下时橙金色辉光渐变 */}
-                    <linearGradient id="photoActiveKeyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    {/* 按键被激活/按下时的炽热金光渐变 */}
+                    <linearGradient id="activeKeyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#fef08a" />
-                      <stop offset="35%" stopColor="#fbbf24" />
-                      <stop offset="70%" stopColor="#f59e0b" />
+                      <stop offset="40%" stopColor="#fbbf24" />
+                      <stop offset="80%" stopColor="#f59e0b" />
                       <stop offset="100%" stopColor="#ea580c" />
                     </linearGradient>
 
-                    {/* 超吹专用火焰紫金渐变 */}
-                    <linearGradient id="photoAltissimoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    {/* 超吹键粉红烈焰渐变 */}
+                    <linearGradient id="altissimoKeyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#fde047" />
                       <stop offset="40%" stopColor="#f43f5e" />
                       <stop offset="100%" stopColor="#e11d48" />
                     </linearGradient>
                   </defs>
 
-                  {/* ===================== 萨克斯管体绘制 ===================== */}
                   {saxType === 'alto' ? (
-                    /* 中音萨克斯 (Eb Alto) - 弯管曲颈造型 (如同用户参考图 1) */
-                    <g id="alto_mimic_body">
-                      {/* 笛头与金色双圈卡子 */}
-                      <polygon points="102,10 126,10 124,38 104,38" fill="#0f172a" stroke="#020617" strokeWidth="1.4" />
-                      <rect x="103" y="18" width="22" height="6" rx="1.5" fill="#eab308" stroke="#ca8a04" strokeWidth="1" />
-                      <rect x="103" y="27" width="22" height="6" rx="1.5" fill="#eab308" stroke="#ca8a04" strokeWidth="1" />
-                      {/* 软木节 */}
-                      <rect x="106" y="38" width="16" height="11" fill="#d97706" stroke="#b45309" strokeWidth="0.8" />
+                    /* ===================== 中音萨克斯 (Eb Alto) - 引线起点精确贴合 ===================== */
+                    <g id="alto_reference_model">
+                      {/* 1. 顶部笛头与软木 */}
+                      <polygon points="144,10 166,10 164,30 146,30" fill="#0f172a" stroke="#020617" strokeWidth="1.2" />
+                      <rect x="145" y="16" width="20" height="4.5" rx="1" fill="#eab308" stroke="#ca8a04" strokeWidth="0.8" />
+                      <rect x="145" y="23" width="20" height="4.5" rx="1" fill="#eab308" stroke="#ca8a04" strokeWidth="0.8" />
+                      <rect x="147" y="30" width="16" height="9" fill="#d97706" stroke="#b45309" strokeWidth="0.8" />
 
-                      {/* 弯曲脖管 */}
-                      <path d="M 114,49 C 114,68 122,76 132,88" fill="none" stroke="url(#photoSaxBrassGrad)" strokeWidth="15" strokeLinecap="round" />
-                      {/* 脖管八度音孔与连杆杠杆 */}
-                      <path d="M 107,59 Q 116,54 125,64" fill="none" stroke="#fef08a" strokeWidth="2.8" />
-                      <circle cx="109" cy="59" r="3.2" fill="#ca8a04" stroke="#fef08a" strokeWidth="1" />
-
-                      {/* 颈节连接环 */}
-                      <rect x="116" y="88" width="32" height="7" rx="2" fill="#ca8a04" stroke="#fef08a" strokeWidth="1" />
-
-                      {/* 主管身锥形铜管 */}
-                      <polygon points="118,92 146,92 157,352 110,352" fill="url(#photoSaxBrassGrad)" />
-
-                      {/* U型底弯管 (Bow) */}
+                      {/* 2. 弯曲脖管 (Neck) */}
                       <path
-                        d="M 110,352 C 107,398 126,436 168,436 C 212,436 236,400 246,342 C 255,296 270,260 290,242 C 276,312 244,442 168,442 C 102,442 95,386 100,352 Z"
-                        fill="url(#photoBellGrad)"
-                      />
-
-                      {/* 大喇叭口 (Flared Bell) */}
-                      <ellipse
-                        cx="270"
-                        cy="248"
-                        rx="28"
-                        ry="42"
-                        transform="rotate(-26 270 248)"
-                        fill="url(#photoBellInner)"
-                        stroke="#fef08a"
-                        strokeWidth="3.2"
-                      />
-                      <ellipse
-                        cx="270"
-                        cy="248"
-                        rx="24"
-                        ry="37"
-                        transform="rotate(-26 270 248)"
+                        d="M 155,39 C 155,52 148,60 158,74"
                         fill="none"
-                        stroke="#eab308"
-                        strokeWidth="1.6"
-                        strokeDasharray="4 2"
+                        stroke="url(#altoBrassGrad)"
+                        strokeWidth="12"
+                        strokeLinecap="round"
                       />
+                      {/* 颈管八度音孔与连接环 */}
+                      <rect x="148" y="74" width="24" height="6" rx="2" fill="#ca8a04" stroke="#fef08a" strokeWidth="1" />
+                      {/* 颈部八度孔实物圆点 */}
+                      <circle cx="152" cy="58" r="3" fill="#ca8a04" stroke="#fef08a" strokeWidth="1" />
 
-                      {/* 喇叭口低音金属护架 */}
-                      <path d="M 218,362 L 244,380 L 256,354" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" />
-                      <circle cx="238" cy="372" r="9.5" fill="#78350f" stroke="#eab308" strokeWidth="2" />
+                      {/* 3. 主管身金色锥形铜管 */}
+                      <polygon points="146,78 170,78 178,355 138,355" fill="url(#altoBrassGrad)" />
+
+                      {/* 4. 主管下端底塞 */}
+                      <rect x="136" y="355" width="44" height="12" rx="2" fill="#78350f" stroke="#ca8a04" strokeWidth="1" />
+
+                      {/* ===================== 科技指引线组 (起点精确对齐按钮边缘) ===================== */}
+                      {/* 八度键引线: 从按钮右边缘 (88, 60) -> 目标音孔 (150, 58) */}
+                      <path d="M 88,60 L 125,60 L 149,58" fill="none" stroke="#fbbf24" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="150" cy="58" r="2.5" fill="#fbbf24" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 掌D引线: 从按钮右边缘 (88, 87) -> 目标音孔 (146, 88) */}
+                      <path d="M 88,87 L 125,87 L 146,88" fill="none" stroke="#f43f5e" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="146" cy="88" r="2.5" fill="#f43f5e" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 掌Eb引线: 从按钮右边缘 (88, 114) -> 目标音孔 (146, 114) */}
+                      <path d="M 88,114 L 125,114 L 146,114" fill="none" stroke="#f43f5e" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="146" cy="114" r="2.5" fill="#f43f5e" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 掌F引线: 从按钮右边缘 (88, 140) -> 目标音孔 (146, 140) */}
+                      <path d="M 88,140 L 125,140 L 146,140" fill="none" stroke="#f43f5e" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="146" cy="140" r="2.5" fill="#f43f5e" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 前F超吹引线: 从按钮底边缘 (158, 66) -> 目标音孔 (158, 88) */}
+                      <path d="M 158,66 L 158,86" fill="none" stroke="#f43f5e" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="158" cy="88" r="2.5" fill="#f43f5e" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 左手变音台 G# 引线: 从按钮右边缘 (88, 191) -> 目标音孔 (146, 192) */}
+                      <path d="M 88,191 L 124,191 L 146,192" fill="none" stroke="#818cf8" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="146" cy="192" r="2.5" fill="#818cf8" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 左手小指台 C#/B/Bb 引线: 从复合台右边缘 (88, 222) -> 目标 (146, 212) */}
+                      <path d="M 88,222 L 124,222 L 146,212" fill="none" stroke="#818cf8" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="146" cy="212" r="2.5" fill="#818cf8" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 右手侧键 侧C 引线: 从按钮左边缘 (214, 147) -> 目标音孔 (170, 148) */}
+                      <path d="M 214,147 L 188,147 L 170,148" fill="none" stroke="#f59e0b" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="170" cy="148" r="2.5" fill="#f59e0b" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 右手侧键 侧Bb 引线: 从按钮左边缘 (214, 178) -> 目标音孔 (170, 178) */}
+                      <path d="M 214,178 L 188,178 L 170,178" fill="none" stroke="#f59e0b" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="170" cy="178" r="2.5" fill="#f59e0b" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 右手侧键 高F# 引线: 从按钮左边缘 (214, 208) -> 目标音孔 (170, 208) */}
+                      <path d="M 214,208 L 188,208 L 170,208" fill="none" stroke="#f43f5e" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="170" cy="208" r="2.5" fill="#f43f5e" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 低音 Eb 引线: 从按钮左边缘 (214, 313) -> 目标音孔 (175, 314) */}
+                      <path d="M 214,313 L 190,313 L 175,314" fill="none" stroke="#f43f5e" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="175" cy="314" r="2.5" fill="#f43f5e" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 低音 C 引线: 从按钮左边缘 (214, 344) -> 目标音孔 (175, 344) */}
+                      <path d="M 214,344 L 190,344 L 175,344" fill="none" stroke="#f43f5e" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="175" cy="344" r="2.5" fill="#f43f5e" stroke="#000" strokeWidth="0.8" />
+
+                      {/* ===================== 5. 左侧展开键位区 ===================== */}
+                      {/* 8(八度) 键: (52, 48, 36, 24), 右侧正好是 x=88, y=60 */}
+                      <rect
+                        id="diag_octave"
+                        x="52"
+                        y="48"
+                        width="36"
+                        height="24"
+                        rx="6"
+                        onClick={() => handleKeyInteraction('key_octave', 'high')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_octave')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_12px_#f59e0b]'
+                            : 'fill-amber-600 stroke-amber-300 stroke-[1.4] hover:fill-amber-500'
+                        }`}
+                      />
+                      <text
+                        x="70"
+                        y="64"
+                        fontSize="9.5"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        pointerEvents="none"
+                        fill="#ffffff"
+                      >
+                        8(八度)
+                      </text>
+
+                      {/* 掌D: (54, 76, 34, 22), 右侧 x=88, y=87 */}
+                      <rect
+                        id="diag_palm_d"
+                        x="54"
+                        y="76"
+                        width="34"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_palm_d', 'altissimo')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_palm_d')
+                            ? 'fill-[url(#altissimoKeyGrad)] stroke-white stroke-[2] drop-shadow-[0_0_10px_#f43f5e]'
+                            : 'fill-fuchsia-800 stroke-fuchsia-400 stroke-[1.4] hover:fill-fuchsia-700'
+                        }`}
+                      />
+                      <text x="71" y="91" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        掌D
+                      </text>
+
+                      {/* 掌Eb: (54, 103, 34, 22), 右侧 x=88, y=114 */}
+                      <rect
+                        id="diag_palm_eb"
+                        x="54"
+                        y="103"
+                        width="34"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_palm_eb', 'altissimo')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_palm_eb')
+                            ? 'fill-[url(#altissimoKeyGrad)] stroke-white stroke-[2] drop-shadow-[0_0_10px_#f43f5e]'
+                            : 'fill-fuchsia-800 stroke-fuchsia-400 stroke-[1.4] hover:fill-fuchsia-700'
+                        }`}
+                      />
+                      <text x="71" y="118" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        掌Eb
+                      </text>
+
+                      {/* 掌F: (54, 129, 34, 22), 右侧 x=88, y=140 */}
+                      <rect
+                        id="diag_palm_f"
+                        x="54"
+                        y="129"
+                        width="34"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_palm_f', 'altissimo')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_palm_f')
+                            ? 'fill-[url(#altissimoKeyGrad)] stroke-white stroke-[2] drop-shadow-[0_0_10px_#f43f5e]'
+                            : 'fill-fuchsia-800 stroke-fuchsia-400 stroke-[1.4] hover:fill-fuchsia-700'
+                        }`}
+                      />
+                      <text x="71" y="144" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        掌F
+                      </text>
+
+                      {/* 左手变音台 G# 键: (52, 180, 36, 22), 右侧 x=88, y=191 */}
+                      <rect
+                        id="diag_lh_gis"
+                        x="52"
+                        y="180"
+                        width="36"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_lh_gis')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_lh_gis')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                            : 'fill-indigo-700 stroke-indigo-300 stroke-[1.4] hover:fill-indigo-600'
+                        }`}
+                      />
+                      <text x="70" y="195" fontSize="9.5" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        G#
+                      </text>
+
+                      {/* 左手小指变音组 (C# / B / 低Bb 复合台): 右侧 x=88, y=222 */}
+                      <g transform="translate(52, 208)">
+                        {/* C# */}
+                        <rect
+                          id="diag_lh_cis"
+                          x="0"
+                          y="0"
+                          width="17"
+                          height="16"
+                          rx="3"
+                          onClick={() => handleKeyInteraction('key_lh_cis')}
+                          className={`cursor-pointer transition-all ${
+                            isKeyActive('key_lh_cis')
+                              ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                              : 'fill-slate-800 stroke-indigo-400 stroke-[1.2] hover:stroke-indigo-300'
+                          }`}
+                        />
+                        <text x="8.5" y="12" fontSize="8" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#cbd5e1">
+                          C#
+                        </text>
+
+                        {/* B */}
+                        <rect
+                          id="diag_lh_low_b"
+                          x="19"
+                          y="0"
+                          width="17"
+                          height="16"
+                          rx="3"
+                          onClick={() => handleKeyInteraction('key_lh_low_b')}
+                          className={`cursor-pointer transition-all ${
+                            isKeyActive('key_lh_low_b')
+                              ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                              : 'fill-slate-800 stroke-indigo-400 stroke-[1.2] hover:stroke-indigo-300'
+                          }`}
+                        />
+                        <text x="27.5" y="12" fontSize="8" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#cbd5e1">
+                          B
+                        </text>
+
+                        {/* 低Bb */}
+                        <rect
+                          id="diag_lh_low_bb"
+                          x="0"
+                          y="18"
+                          width="36"
+                          height="15"
+                          rx="3"
+                          onClick={() => handleKeyInteraction('key_lh_low_bb')}
+                          className={`cursor-pointer transition-all ${
+                            isKeyActive('key_lh_low_bb')
+                              ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                              : 'fill-slate-800 stroke-indigo-400 stroke-[1.2] hover:stroke-indigo-300'
+                          }`}
+                        />
+                        <text x="18" y="29.5" fontSize="8" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#cbd5e1">
+                          低Bb
+                        </text>
+                      </g>
+
+                      {/* ===================== 6. 顶部前F超吹键 (置顶展开) ===================== */}
+                      {/* 前F: (143, 48, 30, 18), 底部中点 x=158, y=66 */}
+                      <rect
+                        id="diag_front_f"
+                        x="143"
+                        y="48"
+                        width="30"
+                        height="18"
+                        rx="4"
+                        onClick={() => handleKeyInteraction('key_front_f', 'altissimo')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_front_f')
+                            ? 'fill-[url(#altissimoKeyGrad)] stroke-white stroke-[2] drop-shadow-[0_0_12px_#f43f5e]'
+                            : 'fill-rose-700 stroke-rose-300 stroke-[1.4] hover:fill-rose-600'
+                        }`}
+                      />
+                      <text x="158" y="61" fontSize="8.5" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        前F
+                      </text>
+
+                      {/* ===================== 7. 右侧展开侧键群 ===================== */}
+                      {/* 侧C: (214, 136, 36, 22), 左侧 x=214, y=147 */}
+                      <rect
+                        id="diag_side_c"
+                        x="214"
+                        y="136"
+                        width="36"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_side_c')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_side_c')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                            : 'fill-amber-600 stroke-amber-200 stroke-[1.4] hover:fill-amber-500'
+                        }`}
+                      />
+                      <text x="232" y="151" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        侧C
+                      </text>
+
+                      {/* 侧Bb: (214, 167, 36, 22), 左侧 x=214, y=178 */}
+                      <rect
+                        id="diag_side_bb"
+                        x="214"
+                        y="167"
+                        width="36"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_side_bb')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_side_bb')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                            : 'fill-amber-600 stroke-amber-200 stroke-[1.4] hover:fill-amber-500'
+                        }`}
+                      />
+                      <text x="232" y="182" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        侧Bb
+                      </text>
+
+                      {/* 高F#: (214, 197, 36, 22), 左侧 x=214, y=208 */}
+                      <rect
+                        id="diag_high_fis"
+                        x="214"
+                        y="197"
+                        width="36"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_high_fis', 'altissimo')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_high_fis')
+                            ? 'fill-[url(#altissimoKeyGrad)] stroke-white stroke-[2] drop-shadow-[0_0_10px_#f43f5e]'
+                            : 'fill-fuchsia-700 stroke-fuchsia-300 stroke-[1.4] hover:fill-fuchsia-600'
+                        }`}
+                      />
+                      <text x="232" y="212" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        高F#
+                      </text>
+
+                      {/* 低音 Eb 键: (214, 302, 36, 22), 左侧 x=214, y=313 */}
+                      <rect
+                        id="diag_rh_eb"
+                        x="214"
+                        y="302"
+                        width="36"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_rh_eb')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_rh_eb')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                            : 'fill-rose-700 stroke-rose-300 stroke-[1.4] hover:fill-rose-600'
+                        }`}
+                      />
+                      <text x="232" y="317" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        Eb
+                      </text>
+
+                      {/* 低音 C 键: (214, 333, 36, 22), 左侧 x=214, y=344 */}
+                      <rect
+                        id="diag_rh_c"
+                        x="214"
+                        y="333"
+                        width="36"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_rh_c')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_rh_c')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                            : 'fill-rose-700 stroke-rose-300 stroke-[1.4] hover:fill-rose-600'
+                        }`}
+                      />
+                      <text x="232" y="348" fontSize="8.5" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        低音C
+                      </text>
+
+                      {/* ===================== 8. 中轴珍珠主音孔 ===================== */}
+                      {/* 1(B) */}
+                      <circle
+                        id="diag_lh1"
+                        cx="158"
+                        cy="114"
+                        r="13"
+                        onClick={() => handleKeyInteraction('key_lh1')}
+                        className={`cursor-pointer transition-all duration-150 ${
+                          isKeyActive('key_lh1')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[2] hover:stroke-amber-300'
+                        }`}
+                      />
+                      <circle cx="158" cy="114" r="10" fill="none" stroke="#d97706" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="158"
+                        y="118.5"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        pointerEvents="none"
+                        fill={isKeyActive('key_lh1') ? '#ffffff' : '#1e293b'}
+                      >
+                        1(B)
+                      </text>
+
+                      {/* 2(A) */}
+                      <circle
+                        id="diag_lh2"
+                        cx="158"
+                        cy="152"
+                        r="13"
+                        onClick={() => handleKeyInteraction('key_lh2')}
+                        className={`cursor-pointer transition-all duration-150 ${
+                          isKeyActive('key_lh2')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[2] hover:stroke-amber-300'
+                        }`}
+                      />
+                      <circle cx="158" cy="152" r="10" fill="none" stroke="#d97706" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="158"
+                        y="156.5"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        pointerEvents="none"
+                        fill={isKeyActive('key_lh2') ? '#ffffff' : '#1e293b'}
+                      >
+                        2(A)
+                      </text>
+
+                      {/* 3(G) */}
+                      <circle
+                        id="diag_lh3"
+                        cx="158"
+                        cy="190"
+                        r="13"
+                        onClick={() => handleKeyInteraction('key_lh3')}
+                        className={`cursor-pointer transition-all duration-150 ${
+                          isKeyActive('key_lh3')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[2] hover:stroke-amber-300'
+                        }`}
+                      />
+                      <circle cx="158" cy="190" r="10" fill="none" stroke="#d97706" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="158"
+                        y="194.5"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        pointerEvents="none"
+                        fill={isKeyActive('key_lh3') ? '#ffffff' : '#1e293b'}
+                      >
+                        3(G)
+                      </text>
+
+                      {/* 4(F) */}
+                      <circle
+                        id="diag_rh1"
+                        cx="158"
+                        cy="234"
+                        r="13"
+                        onClick={() => handleKeyInteraction('key_rh1')}
+                        className={`cursor-pointer transition-all duration-150 ${
+                          isKeyActive('key_rh1')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[2] hover:stroke-amber-300'
+                        }`}
+                      />
+                      <circle cx="158" cy="234" r="10" fill="none" stroke="#d97706" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="158"
+                        y="238.5"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        pointerEvents="none"
+                        fill={isKeyActive('key_rh1') ? '#ffffff' : '#1e293b'}
+                      >
+                        4(F)
+                      </text>
+
+                      {/* 5(E) */}
+                      <circle
+                        id="diag_rh2"
+                        cx="158"
+                        cy="272"
+                        r="13"
+                        onClick={() => handleKeyInteraction('key_rh2')}
+                        className={`cursor-pointer transition-all duration-150 ${
+                          isKeyActive('key_rh2')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[2] hover:stroke-amber-300'
+                        }`}
+                      />
+                      <circle cx="158" cy="272" r="10" fill="none" stroke="#d97706" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="158"
+                        y="276.5"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        pointerEvents="none"
+                        fill={isKeyActive('key_rh2') ? '#ffffff' : '#1e293b'}
+                      >
+                        5(E)
+                      </text>
+
+                      {/* 6(D) */}
+                      <circle
+                        id="diag_rh3"
+                        cx="158"
+                        cy="310"
+                        r="13"
+                        onClick={() => handleKeyInteraction('key_rh3')}
+                        className={`cursor-pointer transition-all duration-150 ${
+                          isKeyActive('key_rh3')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[2] hover:stroke-amber-300'
+                        }`}
+                      />
+                      <circle cx="158" cy="310" r="10" fill="none" stroke="#d97706" strokeWidth="0.8" pointerEvents="none" />
+                      <text
+                        x="158"
+                        y="314.5"
+                        fontSize="10.5"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        pointerEvents="none"
+                        fill={isKeyActive('key_rh3') ? '#ffffff' : '#1e293b'}
+                      >
+                        6(D)
+                      </text>
+
+                      {/* ===================== 9. 右侧大喇叭口 (Bell) 保持华丽共鸣光效 ===================== */}
+                      <g id="bell_flare_art">
+                        <path
+                          d="M 178,350 C 196,358 214,375 230,400 C 244,420 260,418 272,390 C 286,346 300,285 316,220 L 274,204 C 260,255 246,310 228,335 Z"
+                          fill="url(#altoBellBodyGrad)"
+                          stroke="#a855f7"
+                          strokeWidth="1.2"
+                        />
+                        {/* 喇叭声学粒子矩阵 */}
+                        <g opacity="0.65" fill="#fbcfe8">
+                          <circle cx="236" cy="365" r="1.5" />
+                          <circle cx="242" cy="360" r="1.2" />
+                          <circle cx="248" cy="355" r="1.0" />
+                          <circle cx="244" cy="375" r="1.8" />
+                          <circle cx="252" cy="370" r="1.5" />
+                          <circle cx="260" cy="365" r="1.2" />
+                          <circle cx="255" cy="388" r="2.0" />
+                          <circle cx="264" cy="382" r="1.6" />
+                          <circle cx="274" cy="376" r="1.2" />
+                        </g>
+
+                        {/* 喇叭钟口深邃椭圆 */}
+                        <ellipse
+                          cx="295"
+                          cy="212"
+                          rx="24"
+                          ry="36"
+                          transform="rotate(-26 295 212)"
+                          fill="url(#altoBellMouth)"
+                          stroke="#fef08a"
+                          strokeWidth="3.2"
+                        />
+                        <ellipse
+                          cx="295"
+                          cy="212"
+                          rx="20"
+                          ry="31"
+                          transform="rotate(-26 295 212)"
+                          fill="none"
+                          stroke="#eab308"
+                          strokeWidth="1.5"
+                          strokeDasharray="3 2"
+                        />
+                      </g>
                     </g>
                   ) : (
-                    /* 高音萨克斯 (Bb Soprano) - 直管锥形造型 (如同用户参考图 2) */
-                    <g id="soprano_mimic_body">
-                      {/* 笛头与金色卡子 */}
-                      <polygon points="120,10 142,10 140,38 122,38" fill="#0f172a" stroke="#020617" strokeWidth="1.4" />
-                      <rect x="121" y="18" width="20" height="6" rx="1.5" fill="#eab308" stroke="#ca8a04" strokeWidth="1" />
-                      <rect x="121" y="27" width="20" height="6" rx="1.5" fill="#eab308" stroke="#ca8a04" strokeWidth="1" />
-                      <rect x="123" y="38" width="16" height="11" fill="#d97706" />
+                    /* ===================== 高音萨克斯 (Bb Soprano) 直管矢量模型 ===================== */
+                    <g id="soprano_reference_model">
+                      {/* 直管笛头与软木 */}
+                      <polygon points="172,10 192,10 190,36 174,36" fill="#0f172a" stroke="#020617" strokeWidth="1.2" />
+                      <rect x="173" y="18" width="18" height="5" rx="1" fill="#eab308" stroke="#ca8a04" strokeWidth="0.8" />
+                      <rect x="173" y="27" width="18" height="5" rx="1" fill="#eab308" stroke="#ca8a04" strokeWidth="0.8" />
+                      <rect x="175" y="36" width="14" height="10" fill="#d97706" />
 
                       {/* 直管颈节 */}
-                      <rect x="121" y="49" width="20" height="40" fill="url(#photoSaxBrassGrad)" />
-                      <rect x="119" y="87" width="24" height="6.5" rx="2" fill="#ca8a04" stroke="#fef08a" strokeWidth="1" />
+                      <rect x="173" y="46" width="18" height="38" fill="url(#altoBrassGrad)" />
+                      <rect x="171" y="82" width="22" height="6" rx="2" fill="#ca8a04" stroke="#fef08a" strokeWidth="1" />
 
                       {/* 细长直管身锥体 */}
-                      <polygon points="120,92 142,92 154,388 108,388" fill="url(#photoSaxBrassGrad)" />
+                      <polygon points="172,88 192,88 204,365 160,365" fill="url(#altoBrassGrad)" />
 
                       {/* 直管正向喇叭钟口 */}
-                      <polygon points="108,388 154,388 168,438 94,438" fill="url(#photoBellGrad)" />
-                      <ellipse cx="131" cy="438" rx="37" ry="15" fill="url(#photoBellInner)" stroke="#fef08a" strokeWidth="3.2" />
+                      <polygon points="160,365 204,365 224,415 140,415" fill="url(#altoBrassGrad)" stroke="#fef08a" strokeWidth="1" />
+                      <ellipse cx="182" cy="415" rx="42" ry="16" fill="url(#altoBellMouth)" stroke="#fef08a" strokeWidth="3" />
 
-                      {/* 闪亮高光星芒 */}
-                      <path d="M 158,426 L 164,426 M 161,423 L 161,429" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
+                      {/* 引导引线: 从按钮右边缘 (116, 67) -> 目标 (176, 66) */}
+                      <path d="M 116,67 L 155,67 L 176,66" fill="none" stroke="#fbbf24" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="176" cy="66" r="2.5" fill="#fbbf24" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 侧C引线: 从按钮左边缘 (232, 148) -> 目标 (190, 148) */}
+                      <path d="M 232,148 L 208,148 L 190,148" fill="none" stroke="#f59e0b" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="190" cy="148" r="2.5" fill="#f59e0b" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 侧Bb引线: 从按钮左边缘 (232, 178) -> 目标 (190, 178) */}
+                      <path d="M 232,178 L 208,178 L 190,178" fill="none" stroke="#f59e0b" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="190" cy="178" r="2.5" fill="#f59e0b" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 高F#引线: 从按钮左边缘 (232, 208) -> 目标 (190, 208) */}
+                      <path d="M 232,208 L 208,208 L 190,208" fill="none" stroke="#f43f5e" strokeWidth="1.4" strokeDasharray="3 2" />
+                      <circle cx="190" cy="208" r="2.5" fill="#f43f5e" stroke="#000" strokeWidth="0.8" />
+
+                      {/* 高音八度键 */}
+                      <rect
+                        x="80"
+                        y="56"
+                        width="36"
+                        height="22"
+                        rx="5"
+                        onClick={() => handleKeyInteraction('key_octave', 'high')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_octave')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2]'
+                            : 'fill-amber-600 stroke-amber-300 stroke-[1.4]'
+                        }`}
+                      />
+                      <text x="98" y="71" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        8(八度)
+                      </text>
+
+                      {/* 前F超吹 */}
+                      <rect
+                        x="167"
+                        y="52"
+                        width="30"
+                        height="18"
+                        rx="4"
+                        onClick={() => handleKeyInteraction('key_front_f', 'altissimo')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_front_f')
+                            ? 'fill-[url(#altissimoKeyGrad)] stroke-white stroke-[2]'
+                            : 'fill-rose-700 stroke-rose-300 stroke-[1.4]'
+                        }`}
+                      />
+                      <text x="182" y="65" fontSize="8" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
+                        前F
+                      </text>
+
+                      {/* 左手主音孔: 1, 2, 3 */}
+                      <circle
+                        cx="182"
+                        cy="114"
+                        r="12.5"
+                        onClick={() => handleKeyInteraction('key_lh1')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_lh1')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.4]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[1.8]'
+                        }`}
+                      />
+                      <text x="182" y="118.5" fontSize="10" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#1e293b">
+                        1(B)
+                      </text>
+
+                      <circle
+                        cx="182"
+                        cy="152"
+                        r="12.5"
+                        onClick={() => handleKeyInteraction('key_lh2')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_lh2')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.4]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[1.8]'
+                        }`}
+                      />
+                      <text x="182" y="156.5" fontSize="10" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#1e293b">
+                        2(A)
+                      </text>
+
+                      <circle
+                        cx="182"
+                        cy="190"
+                        r="12.5"
+                        onClick={() => handleKeyInteraction('key_lh3')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_lh3')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.4]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[1.8]'
+                        }`}
+                      />
+                      <text x="182" y="194.5" fontSize="10" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#1e293b">
+                        3(G)
+                      </text>
+
+                      {/* 右手高音侧键 */}
+                      <rect x="232" y="137" width="36" height="22" rx="5" onClick={() => handleKeyInteraction('key_side_c')} fill="#1e293b" stroke="#f59e0b" strokeWidth="1.4" className="cursor-pointer" />
+                      <text x="250" y="152" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">侧C</text>
+
+                      <rect x="232" y="167" width="36" height="22" rx="5" onClick={() => handleKeyInteraction('key_side_bb')} fill="#1e293b" stroke="#f59e0b" strokeWidth="1.4" className="cursor-pointer" />
+                      <text x="250" y="182" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">侧Bb</text>
+
+                      <rect x="232" y="197" width="36" height="22" rx="5" onClick={() => handleKeyInteraction('key_high_fis', 'altissimo')} fill="#1e293b" stroke="#f43f5e" strokeWidth="1.4" className="cursor-pointer" />
+                      <text x="250" y="212" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#f472b6">高F#</text>
+
+                      {/* 右手主音孔: 4, 5, 6 */}
+                      <circle
+                        cx="182"
+                        cy="234"
+                        r="12.5"
+                        onClick={() => handleKeyInteraction('key_rh1')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_rh1')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.4]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[1.8]'
+                        }`}
+                      />
+                      <text x="182" y="238.5" fontSize="10" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#1e293b">
+                        4(F)
+                      </text>
+
+                      <circle
+                        cx="182"
+                        cy="272"
+                        r="12.5"
+                        onClick={() => handleKeyInteraction('key_rh2')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_rh2')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.4]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[1.8]'
+                        }`}
+                      />
+                      <text x="182" y="276.5" fontSize="10" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#1e293b">
+                        5(E)
+                      </text>
+
+                      <circle
+                        cx="182"
+                        cy="310"
+                        r="12.5"
+                        onClick={() => handleKeyInteraction('key_rh3')}
+                        className={`cursor-pointer transition-all ${
+                          isKeyActive('key_rh3')
+                            ? 'fill-[url(#activeKeyGrad)] stroke-white stroke-[2.4]'
+                            : 'fill-[url(#pearlKeyGrad)] stroke-amber-500 stroke-[1.8]'
+                        }`}
+                      />
+                      <text x="182" y="314.5" fontSize="10" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#1e293b">
+                        6(D)
+                      </text>
+
+                      {/* 低音 Eb & C */}
+                      <rect x="232" y="302" width="36" height="22" rx="5" onClick={() => handleKeyInteraction('key_rh_eb')} fill="#1e293b" stroke="#f59e0b" strokeWidth="1.4" className="cursor-pointer" />
+                      <text x="250" y="317" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">Eb</text>
+
+                      <rect x="232" y="333" width="36" height="22" rx="5" onClick={() => handleKeyInteraction('key_rh_c')} fill="#1e293b" stroke="#f59e0b" strokeWidth="1.4" className="cursor-pointer" />
+                      <text x="250" y="348" fontSize="8.5" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">低音C</text>
                     </g>
                   )}
-
-                  {/* 镀镍不锈钢连杆轴柱 */}
-                  <line x1="113" y1="94" x2="108" y2="348" stroke="#713f12" strokeWidth="2.8" />
-                  <line x1="150" y1="94" x2="157" y2="348" stroke="#713f12" strokeWidth="2.8" />
-
-                  {/* ===================== 超高音区掌键群 (Left Hand Palm Keys: D, Eb, F) ===================== */}
-                  {/* Palm D Key */}
-                  <rect
-                    id="key_palm_d"
-                    x="86"
-                    y="76"
-                    width="14"
-                    height="17"
-                    rx="3"
-                    onClick={() => handleKeyInteraction('key_palm_d', 'altissimo')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_palm_d')
-                        ? 'fill-[url(#photoAltissimoGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_10px_#f43f5e]'
-                        : 'fill-slate-800 stroke-amber-600 stroke-[1.4] hover:stroke-rose-400'
-                    }`}
-                  />
-                  <text x="93" y="88" fontSize="8" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_palm_d') ? '#ffffff' : '#cbd5e1'}>
-                    掌D
-                  </text>
-
-                  {/* Palm Eb Key */}
-                  <rect
-                    id="key_palm_eb"
-                    x="86"
-                    y="96"
-                    width="14"
-                    height="17"
-                    rx="3"
-                    onClick={() => handleKeyInteraction('key_palm_eb', 'altissimo')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_palm_eb')
-                        ? 'fill-[url(#photoAltissimoGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_10px_#f43f5e]'
-                        : 'fill-slate-800 stroke-amber-600 stroke-[1.4] hover:stroke-rose-400'
-                    }`}
-                  />
-                  <text x="93" y="108" fontSize="8" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_palm_eb') ? '#ffffff' : '#cbd5e1'}>
-                    掌Eb
-                  </text>
-
-                  {/* Palm F Key */}
-                  <rect
-                    id="key_palm_f"
-                    x="86"
-                    y="116"
-                    width="14"
-                    height="17"
-                    rx="3"
-                    onClick={() => handleKeyInteraction('key_palm_f', 'altissimo')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_palm_f')
-                        ? 'fill-[url(#photoAltissimoGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_10px_#f43f5e]'
-                        : 'fill-slate-800 stroke-amber-600 stroke-[1.4] hover:stroke-rose-400'
-                    }`}
-                  />
-                  <text x="93" y="128" fontSize="8" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_palm_f') ? '#ffffff' : '#cbd5e1'}>
-                    掌F
-                  </text>
-
-                  {/* ===================== 超吹关键核心键：前高音F叉键 (Front F Key) ===================== */}
-                  <polygon
-                    id="key_front_f"
-                    points="132,92 138,102 126,102"
-                    onClick={() => handleKeyInteraction('key_front_f', 'altissimo')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_front_f')
-                        ? 'fill-[url(#photoAltissimoGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_12px_#f43f5e]'
-                        : 'fill-rose-700 stroke-amber-400 stroke-[1.6] hover:fill-rose-500'
-                    }`}
-                  />
-                  <text x="132" y="100" fontSize="7.5" fontWeight="900" textAnchor="middle" pointerEvents="none" fill="#ffffff">
-                    前F
-                  </text>
-
-                  {/* ===================== 八度高音键 (Octave Key) - 拇指按压 ===================== */}
-                  <rect x="68" y="98" width="12" height="24" rx="4" fill="#0f172a" stroke="#334155" strokeWidth="1.2" />
-                  <rect
-                    id="key_octave"
-                    x="65"
-                    y="68"
-                    width="21"
-                    height="26"
-                    rx="6.5"
-                    onClick={() => handleKeyInteraction('key_octave', 'high')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_octave')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_14px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-700 stroke-[1.8] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text
-                    x="75.5"
-                    y="84"
-                    fontSize="9.5"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    pointerEvents="none"
-                    fill={isKeyActive('key_octave') ? '#ffffff' : '#f59e0b'}
-                  >
-                    8(八度)
-                  </text>
-
-                  {/* ===================== 左手主音孔 (LH Stack: 1·2·3) ===================== */}
-                  {/* 1号键：左手食指 (B) */}
-                  <circle
-                    id="key_lh1"
-                    cx="132"
-                    cy="119"
-                    r="12.5"
-                    onClick={() => handleKeyInteraction('key_lh1')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_lh1')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
-                        : 'fill-[url(#photoPearlGrad)] stroke-amber-600 stroke-[2] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text
-                    x="132"
-                    y="123"
-                    fontSize="11"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    pointerEvents="none"
-                    fill={isKeyActive('key_lh1') ? '#ffffff' : '#1e293b'}
-                  >
-                    1(B)
-                  </text>
-
-                  {/* Bis 降B辅助键 (Bis Key) */}
-                  <circle cx="132" cy="138" r="5" fill="#e2e8f0" stroke="#ca8a04" strokeWidth="1.2" />
-
-                  {/* 2号键：左手中指 (A) */}
-                  <circle
-                    id="key_lh2"
-                    cx="132"
-                    cy="156"
-                    r="12.5"
-                    onClick={() => handleKeyInteraction('key_lh2')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_lh2')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
-                        : 'fill-[url(#photoPearlGrad)] stroke-amber-600 stroke-[2] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text
-                    x="132"
-                    y="160"
-                    fontSize="11"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    pointerEvents="none"
-                    fill={isKeyActive('key_lh2') ? '#ffffff' : '#1e293b'}
-                  >
-                    2(A)
-                  </text>
-
-                  {/* 3号键：左手无名指 (G) */}
-                  <circle
-                    id="key_lh3"
-                    cx="132"
-                    cy="187"
-                    r="12.5"
-                    onClick={() => handleKeyInteraction('key_lh3')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_lh3')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
-                        : 'fill-[url(#photoPearlGrad)] stroke-amber-600 stroke-[2] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text
-                    x="132"
-                    y="191"
-                    fontSize="11"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    pointerEvents="none"
-                    fill={isKeyActive('key_lh3') ? '#ffffff' : '#1e293b'}
-                  >
-                    3(G)
-                  </text>
-
-                  {/* ===================== 右手高音侧键群 (Side Keys: C, Bb, High F#) ===================== */}
-                  {/* Side C Key */}
-                  <rect
-                    id="key_side_c"
-                    x="154"
-                    y="142"
-                    width="13"
-                    height="18"
-                    rx="3"
-                    onClick={() => handleKeyInteraction('key_side_c')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_side_c')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_10px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-600 stroke-[1.4] hover:stroke-amber-400'
-                    }`}
-                  />
-                  <text x="160.5" y="154.5" fontSize="7.5" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_side_c') ? '#ffffff' : '#cbd5e1'}>
-                    侧C
-                  </text>
-
-                  {/* Side Bb Key */}
-                  <rect
-                    id="key_side_bb"
-                    x="154"
-                    y="164"
-                    width="13"
-                    height="18"
-                    rx="3"
-                    onClick={() => handleKeyInteraction('key_side_bb')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_side_bb')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_10px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-600 stroke-[1.4] hover:stroke-amber-400'
-                    }`}
-                  />
-                  <text x="160.5" y="176.5" fontSize="7" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_side_bb') ? '#ffffff' : '#cbd5e1'}>
-                    侧Bb
-                  </text>
-
-                  {/* High F# Key */}
-                  <rect
-                    id="key_high_fis"
-                    x="154"
-                    y="186"
-                    width="13"
-                    height="18"
-                    rx="3"
-                    onClick={() => handleKeyInteraction('key_high_fis', 'altissimo')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_high_fis')
-                        ? 'fill-[url(#photoAltissimoGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_10px_#f43f5e]'
-                        : 'fill-slate-800 stroke-amber-600 stroke-[1.4] hover:stroke-rose-400'
-                    }`}
-                  />
-                  <text x="160.5" y="198" fontSize="7" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_high_fis') ? '#ffffff' : '#cbd5e1'}>
-                    高F#
-                  </text>
-
-                  {/* ===================== 左手小指变音键群 (Spatula Table) ===================== */}
-                  {/* G# 侧翘板键 */}
-                  <rect
-                    id="key_lh_gis"
-                    x="84"
-                    y="175"
-                    width="26"
-                    height="16"
-                    rx="3.5"
-                    onClick={() => handleKeyInteraction('key_lh_gis')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_lh_gis')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.6] drop-shadow-[0_0_11px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-700 stroke-[1.6] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text x="97" y="187.5" fontSize="10" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_lh_gis') ? '#ffffff' : '#cbd5e1'}>
-                    G#
-                  </text>
-
-                  {/* 低音 C# 键 */}
-                  <rect
-                    id="key_lh_cis"
-                    x="84"
-                    y="195"
-                    width="12"
-                    height="15"
-                    rx="2"
-                    onClick={() => handleKeyInteraction('key_lh_cis')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_lh_cis')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_9px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-700 stroke-[1.4] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text x="90" y="206" fontSize="8.5" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_lh_cis') ? '#ffffff' : '#94a3b8'}>
-                    C#
-                  </text>
-
-                  {/* 低音 B 键 */}
-                  <rect
-                    id="key_lh_low_b"
-                    x="98"
-                    y="195"
-                    width="12"
-                    height="15"
-                    rx="2"
-                    onClick={() => handleKeyInteraction('key_lh_low_b')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_lh_low_b')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_9px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-700 stroke-[1.4] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text x="104" y="206" fontSize="8.5" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_lh_low_b') ? '#ffffff' : '#94a3b8'}>
-                    B
-                  </text>
-
-                  {/* 最低音 Bb 键 */}
-                  <rect
-                    id="key_lh_low_bb"
-                    x="84"
-                    y="213"
-                    width="26"
-                    height="12"
-                    rx="2"
-                    onClick={() => handleKeyInteraction('key_lh_low_bb')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_lh_low_bb')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.4] drop-shadow-[0_0_9px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-700 stroke-[1.4] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text x="97" y="222" fontSize="8" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_lh_low_bb') ? '#ffffff' : '#94a3b8'}>
-                    低Bb
-                  </text>
-
-                  {/* 右手拇指托钩 */}
-                  <path d="M 154,222 Q 170,227 162,240" fill="none" stroke="#eab308" strokeWidth="3.5" strokeLinecap="round" />
-
-                  {/* ===================== 右手主音孔 (RH Stack: 4·5·6) ===================== */}
-                  {/* 4号键：右手食指 (F) */}
-                  <circle
-                    id="key_rh1"
-                    cx="133"
-                    cy="232"
-                    r="12.5"
-                    onClick={() => handleKeyInteraction('key_rh1')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_rh1')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
-                        : 'fill-[url(#photoPearlGrad)] stroke-amber-600 stroke-[2] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text
-                    x="133"
-                    y="236"
-                    fontSize="11"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    pointerEvents="none"
-                    fill={isKeyActive('key_rh1') ? '#ffffff' : '#1e293b'}
-                  >
-                    4(F)
-                  </text>
-
-                  {/* 5号键：右手中指 (E) */}
-                  <circle
-                    id="key_rh2"
-                    cx="133"
-                    cy="263"
-                    r="12.5"
-                    onClick={() => handleKeyInteraction('key_rh2')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_rh2')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
-                        : 'fill-[url(#photoPearlGrad)] stroke-amber-600 stroke-[2] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text
-                    x="133"
-                    y="267"
-                    fontSize="11"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    pointerEvents="none"
-                    fill={isKeyActive('key_rh2') ? '#ffffff' : '#1e293b'}
-                  >
-                    5(E)
-                  </text>
-
-                  {/* 6号键：右手无名指 (D) */}
-                  <circle
-                    id="key_rh3"
-                    cx="133"
-                    cy="294"
-                    r="12.5"
-                    onClick={() => handleKeyInteraction('key_rh3')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_rh3')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.8] drop-shadow-[0_0_12px_#f59e0b]'
-                        : 'fill-[url(#photoPearlGrad)] stroke-amber-600 stroke-[2] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text
-                    x="133"
-                    y="298"
-                    fontSize="11"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    pointerEvents="none"
-                    fill={isKeyActive('key_rh3') ? '#ffffff' : '#1e293b'}
-                  >
-                    6(D)
-                  </text>
-
-                  {/* ===================== 右手小指双滚轮键台 (Pinky Rollers: Eb & C) ===================== */}
-                  {/* 低音 Eb 键 */}
-                  <rect
-                    id="key_rh_eb"
-                    x="155"
-                    y="290"
-                    width="26"
-                    height="16"
-                    rx="4.5"
-                    onClick={() => handleKeyInteraction('key_rh_eb')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_rh_eb')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.6] drop-shadow-[0_0_11px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-700 stroke-[1.6] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text x="168" y="302" fontSize="10" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_rh_eb') ? '#ffffff' : '#cbd5e1'}>
-                    Eb
-                  </text>
-
-                  {/* 低音 C 键 */}
-                  <rect
-                    id="key_rh_c"
-                    x="155"
-                    y="310"
-                    width="26"
-                    height="16"
-                    rx="4.5"
-                    onClick={() => handleKeyInteraction('key_rh_c')}
-                    className={`cursor-pointer transition-all duration-150 ${
-                      isKeyActive('key_rh_c')
-                        ? 'fill-[url(#photoActiveKeyGrad)] stroke-white stroke-[2.6] drop-shadow-[0_0_11px_#f59e0b]'
-                        : 'fill-slate-800 stroke-amber-700 stroke-[1.6] hover:stroke-amber-400 hover:scale-105'
-                    }`}
-                  />
-                  <text x="168" y="322" fontSize="9" fontWeight="900" textAnchor="middle" pointerEvents="none" fill={isKeyActive('key_rh_c') ? '#ffffff' : '#cbd5e1'}>
-                    低音C
-                  </text>
                 </svg>
               </div>
             </div>
 
-            <div className="w-full mt-3 p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-center">
-              <p className="text-xs text-amber-300 font-semibold mb-0.5">
+            {/* Bottom Info Box */}
+            <div className="w-full mt-3 p-3 rounded-xl bg-slate-950/90 border border-slate-800 text-center">
+              <p className="text-xs text-amber-300 font-bold mb-0.5">
                 高精交互指法图谱（支持高八度 & 超吹Altissimo键位）
               </p>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                包含标准1-6键、八度键、左手高音掌键（D/Eb/F）、超吹前F叉键与右侧键。点击上方音区切换或直接点击按键，即可体验逼真声学反馈。
+                已拉开按键间距并增设指引线。包含标准1-6键、八度键、左手高音掌键 (D/Eb/F)、超吹前F叉键与右侧键。
               </p>
             </div>
           </div>
@@ -1237,7 +2024,7 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
       </div>
 
       {/* ===================== NEW: 萨克斯按键音效即时试听与对照矩阵 (Key Sound Board) ===================== */}
-      <div className="w-full mt-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-slate-800/90 shadow-2xl">
+      <div className="w-full mt-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#070b14] via-[#0a0f1d] to-[#070b14] border border-slate-800/90 shadow-2xl">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3.5 pb-2 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
@@ -1250,203 +2037,121 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* 1. 右侧按键群 (Right-hand Keys · 用户特别强调的右手与右侧按钮) */}
-          <div className="lg:col-span-5 p-3 rounded-xl bg-slate-950/80 border border-emerald-500/20 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  右手按键群 (右侧核心按钮 · 主音孔/侧键/小指台)
-                </span>
-                <span className="text-[10px] text-emerald-400/80">右手食/中/无名/小指</span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {rightHandKeys.map((keyId) => {
-                  const keyDef = KEY_PITCH_MAP[keyId];
-                  if (!keyDef) return null;
-                  const active = isKeyActive(keyId);
-                  const written =
-                    register === 'altissimo'
-                      ? keyDef.writtenNoteAlt
-                      : register === 'high'
-                      ? keyDef.writtenNoteHigh
-                      : keyDef.writtenNoteLow;
-                  const freq =
-                    register === 'altissimo'
-                      ? keyDef.altissimoFreq
-                      : register === 'high'
-                      ? keyDef.highFreq
-                      : keyDef.lowFreq;
-                  const sounding = getSaxSoundingPitch(freq, saxType);
-
-                  return (
-                    <button
-                      key={keyId}
-                      onClick={() => handleKeyInteraction(keyId)}
-                      className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all cursor-pointer active:scale-95 min-h-[58px] ${
-                        active
-                          ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-lg shadow-amber-500/30'
-                          : 'bg-slate-900/90 text-slate-200 border-slate-700/80 hover:border-emerald-400/70 hover:bg-slate-800'
-                      }`}
-                      title={`${keyDef.label} - 点击试听`}
-                    >
-                      <span className="text-xs font-bold leading-tight">{keyDef.shortName}</span>
-                      <span
-                        className={`text-[10px] leading-tight mt-0.5 ${
-                          active ? 'text-slate-900 font-extrabold' : 'text-amber-300'
-                        }`}
-                      >
-                        {written}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {/* 左手主控与掌键 */}
+          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-2">
+            <span className="text-[11px] font-bold text-amber-400 flex items-center justify-between">
+              <span>左手按键区 (上把位 1·2·3 与 小指台)</span>
+              <span className="text-[10px] text-slate-500">记谱高音谱表</span>
+            </span>
+            <div className="grid grid-cols-2 gap-1.5">
+              {leftHandKeys.map((keyId) => {
+                const info = KEY_PITCH_MAP[keyId];
+                const active = isKeyActive(keyId);
+                return (
+                  <button
+                    key={keyId}
+                    onClick={() => handleKeyInteraction(keyId)}
+                    className={`px-2 py-1.5 rounded-lg text-left text-xs transition-all flex flex-col cursor-pointer active:scale-95 ${
+                      active
+                        ? 'bg-amber-500 text-slate-950 font-black shadow-md border border-amber-300'
+                        : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-amber-500/40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="font-bold text-[11px] truncate">{info?.label || keyId}</span>
+                      <span className={`text-[10px] ${active ? 'text-slate-900 font-black' : 'text-amber-400'}`}>
+                        {register === 'altissimo'
+                          ? info?.writtenNoteAlt
+                          : register === 'high'
+                          ? info?.writtenNoteHigh
+                          : info?.writtenNoteLow}
                       </span>
-                      <span
-                        className={`text-[9px] leading-tight ${
-                          active ? 'text-slate-950/80 font-bold' : 'text-slate-400'
-                        }`}
-                      >
-                        实音:{sounding.noteName}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-[10px] text-slate-500 mt-2">
-              包含4/5/6下把位主音孔、侧C/侧Bb/高F#侧键连杆及低音Eb/C小指滚轮。
-            </p>
           </div>
 
-          {/* 2. 左手按键群 (Left-hand Keys · 左手上把位主音孔与小指台) */}
-          <div className="lg:col-span-4 p-3 rounded-xl bg-slate-950/80 border border-sky-500/20 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-sky-300 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-                  左手按键群 (左手上把位 1·2·3 与小指台)
-                </span>
-                <span className="text-[10px] text-sky-400/80">左手食/中/无名/小指</span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {leftHandKeys.map((keyId) => {
-                  const keyDef = KEY_PITCH_MAP[keyId];
-                  if (!keyDef) return null;
-                  const active = isKeyActive(keyId);
-                  const written =
-                    register === 'altissimo'
-                      ? keyDef.writtenNoteAlt
-                      : register === 'high'
-                      ? keyDef.writtenNoteHigh
-                      : keyDef.writtenNoteLow;
-                  const freq =
-                    register === 'altissimo'
-                      ? keyDef.altissimoFreq
-                      : register === 'high'
-                      ? keyDef.highFreq
-                      : keyDef.lowFreq;
-                  const sounding = getSaxSoundingPitch(freq, saxType);
-
-                  return (
-                    <button
-                      key={keyId}
-                      onClick={() => handleKeyInteraction(keyId)}
-                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer active:scale-95 min-h-[58px] ${
-                        active
-                          ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-lg shadow-amber-500/30'
-                          : 'bg-slate-900/90 text-slate-200 border-slate-700/80 hover:border-sky-400/70 hover:bg-slate-800'
-                      }`}
-                      title={`${keyDef.label} - 点击试听`}
-                    >
-                      <span className="text-xs font-bold leading-tight">{keyDef.shortName}</span>
-                      <span
-                        className={`text-[10px] leading-tight mt-0.5 ${
-                          active ? 'text-slate-900 font-extrabold' : 'text-amber-300'
-                        }`}
-                      >
-                        {written}
+          {/* 右手主控与侧键 */}
+          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-2">
+            <span className="text-[11px] font-bold text-emerald-400 flex items-center justify-between">
+              <span>右手按键区 (下把位 4·5·6 与 侧键)</span>
+              <span className="text-[10px] text-slate-500">记谱音区</span>
+            </span>
+            <div className="grid grid-cols-2 gap-1.5">
+              {rightHandKeys.map((keyId) => {
+                const info = KEY_PITCH_MAP[keyId];
+                const active = isKeyActive(keyId);
+                return (
+                  <button
+                    key={keyId}
+                    onClick={() => handleKeyInteraction(keyId)}
+                    className={`px-2 py-1.5 rounded-lg text-left text-xs transition-all flex flex-col cursor-pointer active:scale-95 ${
+                      active
+                        ? 'bg-emerald-500 text-slate-950 font-black shadow-md border border-emerald-300'
+                        : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-emerald-500/40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="font-bold text-[11px] truncate">{info?.label || keyId}</span>
+                      <span className={`text-[10px] ${active ? 'text-slate-900 font-black' : 'text-emerald-400'}`}>
+                        {register === 'altissimo'
+                          ? info?.writtenNoteAlt
+                          : register === 'high'
+                          ? info?.writtenNoteHigh
+                          : info?.writtenNoteLow}
                       </span>
-                      <span
-                        className={`text-[9px] leading-tight ${
-                          active ? 'text-slate-950/80 font-bold' : 'text-slate-400'
-                        }`}
-                      >
-                        实音:{sounding.noteName}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-[10px] text-slate-500 mt-2">
-              包含1/2/3主音孔及G#/C#/B/Bb变音小指台。
-            </p>
           </div>
 
-          {/* 3. 八度泛音、超吹前F与高音掌键 (Octave & Palm Keys) */}
-          <div className="lg:col-span-3 p-3 rounded-xl bg-slate-950/80 border border-rose-500/20 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-                  八度/超吹/高音掌键
-                </span>
-                <span className="text-[10px] text-rose-400/80">高音域与泛音</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {topAuxKeys.map((keyId) => {
-                  const keyDef = KEY_PITCH_MAP[keyId];
-                  if (!keyDef) return null;
-                  const active = isKeyActive(keyId);
-                  const written =
-                    register === 'altissimo'
-                      ? keyDef.writtenNoteAlt
-                      : register === 'high'
-                      ? keyDef.writtenNoteHigh
-                      : keyDef.writtenNoteLow;
-                  const freq =
-                    register === 'altissimo'
-                      ? keyDef.altissimoFreq
-                      : register === 'high'
-                      ? keyDef.highFreq
-                      : keyDef.lowFreq;
-                  const sounding = getSaxSoundingPitch(freq, saxType);
-
-                  return (
-                    <button
-                      key={keyId}
-                      onClick={() => handleKeyInteraction(keyId)}
-                      className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer active:scale-95 min-h-[58px] ${
-                        active
-                          ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-lg shadow-amber-500/30'
-                          : 'bg-slate-900/90 text-slate-200 border-slate-700/80 hover:border-rose-400/70 hover:bg-slate-800'
-                      }`}
-                      title={`${keyDef.label} - 点击试听`}
-                    >
-                      <span className="text-xs font-bold leading-tight">{keyDef.shortName}</span>
-                      <span
-                        className={`text-[10px] leading-tight mt-0.5 ${
-                          active ? 'text-slate-900 font-extrabold' : 'text-amber-300'
-                        }`}
-                      >
-                        {written}
-                      </span>
-                      <span
-                        className={`text-[9px] leading-tight ${
-                          active ? 'text-slate-950/80 font-bold' : 'text-slate-400'
-                        }`}
-                      >
-                        实音:{sounding.noteName}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* 特殊功能键：八度键、超吹前F、掌键 */}
+          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-2">
+            <span className="text-[11px] font-bold text-rose-400 flex items-center justify-between">
+              <span>超吹前F键 / 八度键 / 掌键区</span>
+              <span className="text-[10px] text-rose-400/80">泛音与超吹</span>
+            </span>
+            <div className="grid grid-cols-1 gap-1.5">
+              {topAuxKeys.map((keyId) => {
+                const info = KEY_PITCH_MAP[keyId];
+                const active = isKeyActive(keyId);
+                const isAltissimo = keyId === 'key_front_f' || keyId.startsWith('key_palm');
+                return (
+                  <button
+                    key={keyId}
+                    onClick={() =>
+                      handleKeyInteraction(
+                        keyId,
+                        keyId === 'key_octave' ? 'high' : isAltissimo ? 'altissimo' : undefined
+                      )
+                    }
+                    className={`px-2.5 py-1.5 rounded-lg text-left text-xs transition-all flex items-center justify-between cursor-pointer active:scale-95 ${
+                      active
+                        ? 'bg-rose-500 text-white font-black shadow-md border border-rose-300'
+                        : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-rose-500/40'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      {keyId === 'key_octave' ? (
+                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      ) : (
+                        <Flame className="w-3.5 h-3.5 text-rose-400" />
+                      )}
+                      <span className="font-bold text-[11px]">{info?.label || keyId}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                      <span>记谱:</span>
+                      <b className="text-amber-300">{info?.writtenNoteHigh || info?.writtenNoteAlt}</b>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-[10px] text-slate-500 mt-2">
-              8度键开启高八度泛音，前F与掌键支持D6-A6超吹裂帛音域。
-            </p>
           </div>
         </div>
       </div>

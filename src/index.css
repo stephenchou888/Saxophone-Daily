@@ -58,3 +58,20 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* ABCjs Music Score Enhancements */
+.abcjs-lyric {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  fill: #334155 !important;
+}
+
+.abcjs-accidental {
+  fill: #d97706 !important;
+  font-weight: bold !important;
+}
+
+.active-score-note .abcjs-accidental {
+  fill: #ea580c !important;
+  filter: drop-shadow(0 0 6px rgba(234, 88, 12, 0.95)) !important;
+}

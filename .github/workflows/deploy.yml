@@ -23,17 +23,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10 # 限制最长10分钟，彻底杜绝无限卡住挂起
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          # 不强制要求 cache，避免无 package-lock.json 时报错中断
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ -f "package-lock.json" ]; then
+            npm ci || npm install --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
 
       - name: Build project
         run: npm run build

@@ -12,6 +12,7 @@ export interface ScaleDefinition {
   tip: string;
   notes: string[];
   abc: string;
+  category?: 'major' | 'minor' | 'special';
 }
 
 export type SaxophoneType = 'alto' | 'soprano';

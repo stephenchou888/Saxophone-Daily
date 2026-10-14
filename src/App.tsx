@@ -244,17 +244,34 @@ export default function App() {
                 onChange={(e) => handleScaleChange(e.target.value)}
                 className="w-full sm:w-auto bg-slate-950 border border-slate-700 hover:border-amber-500/50 text-slate-200 text-xs sm:text-sm font-semibold rounded-xl px-3.5 py-2.5 outline-none transition-colors"
               >
-                {SCALES.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-slate-900 text-slate-100">
-                    {s.name.split(' (')[0]} ({s.accidentals})
-                  </option>
-                ))}
+                <optgroup label="🌟 萨克斯核心特训与特色音阶" className="bg-slate-950 text-amber-400 font-bold">
+                  {SCALES.filter((s) => s.category === 'special').map((s) => (
+                    <option key={s.id} value={s.id} className="bg-slate-900 text-slate-100 font-normal">
+                      {s.name.split(' (')[0]} ({s.accidentals})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🎷 五度圈全部 12 个自然大调 (全套)" className="bg-slate-950 text-amber-400 font-bold">
+                  {SCALES.filter((s) => s.category === 'major').map((s) => (
+                    <option key={s.id} value={s.id} className="bg-slate-900 text-slate-100 font-normal">
+                      {s.name.split(' (')[0]} ({s.accidentals})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🎵 常用自然小调与关系小调" className="bg-slate-950 text-indigo-400 font-bold">
+                  {SCALES.filter((s) => s.category === 'minor').map((s) => (
+                    <option key={s.id} value={s.id} className="bg-slate-900 text-slate-100 font-normal">
+                      {s.name.split(' (')[0]} ({s.accidentals})
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
           </div>
 
-          {/* High-fidelity Vector Sheet Music (Supports Wide Panoramic Mode) */}
+          {/* High-fidelity Vector Sheet Music (Supports Notehead Accidentals & Wide Panoramic Mode) */}
           <SheetMusicView
+            scale={currentScale}
             abcNotation={currentScale.abc}
             currentNoteIndex={currentNoteIndex}
             onNoteClick={handleSelectNoteIndex}
