@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { SaxophoneType } from '../types/music';
 
 export type SaxRegister = 'low' | 'high' | 'altissimo';
@@ -289,55 +289,82 @@ export function getSaxSoundingPitch(writtenFreq: number, saxType: SaxophoneType)
   return { concertFreq: Math.round(concertFreq * 100) / 100, noteName };
 }
 
+// ===================== 全局共享音频输出（#9） =====================
+// 整个页面只创建一个 AudioContext；所有声音先接入总输出 GainNode 再到扬声器，
+// 静音时把总输出增益置 0，对试听、按键、节拍器统一生效。
+let sharedCtx: AudioContext | null = null;
+let masterOut: GainNode | null = null;
+let muted = false;
+const muteListeners = new Set<() => void>();
+
+function getSharedAudioContext(): AudioContext | null {
+  if (!sharedCtx) {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return null;
+    sharedCtx = new AudioCtx();
+    masterOut = sharedCtx.createGain();
+    masterOut.gain.value = muted ? 0 : 1;
+    masterOut.connect(sharedCtx.destination);
+  }
+  if (sharedCtx.state === 'suspended') {
+    sharedCtx.resume().catch(() => {});
+  }
+  return sharedCtx;
+}
+
+function getOutput(ctx: AudioContext): AudioNode {
+  return masterOut ?? ctx.destination;
+}
+
+export function setAudioMuted(next: boolean) {
+  muted = next;
+  if (sharedCtx && masterOut) masterOut.gain.setValueAtTime(next ? 0 : 1, sharedCtx.currentTime);
+  muteListeners.forEach((listener) => listener());
+}
+
+function subscribeMuted(listener: () => void) {
+  muteListeners.add(listener);
+  return () => muteListeners.delete(listener);
+}
+
+export function useAudioMuted(): [boolean, (next: boolean) => void] {
+  const value = useSyncExternalStore(subscribeMuted, () => muted);
+  return [value, setAudioMuted];
+}
+
+// iOS Safari & 移动端：首次用户手势时解锁音频（全局只注册一次）
+let unlockInstalled = false;
+function installAudioUnlock() {
+  if (unlockInstalled) return;
+  unlockInstalled = true;
+  const unlock = () => {
+    const ctx = getSharedAudioContext();
+    if (ctx) {
+      try {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      } catch (_) {}
+    }
+    window.removeEventListener('touchstart', unlock);
+    window.removeEventListener('touchend', unlock);
+    window.removeEventListener('click', unlock);
+  };
+  window.addEventListener('touchstart', unlock, { passive: true });
+  window.addEventListener('touchend', unlock, { passive: true });
+  window.addEventListener('click', unlock, { passive: true });
+}
+
 export function useSoundEngine() {
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const getAudioContext = getSharedAudioContext;
 
-  const getAudioContext = useCallback(() => {
-    if (!audioCtxRef.current) {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtx) {
-        audioCtxRef.current = new AudioCtx();
-      }
-    }
-    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume().catch(() => {});
-    }
-    return audioCtxRef.current;
-  }, []);
-
-  // iOS Safari & Mobile audio unlock on first user gesture
   useEffect(() => {
-    const unlock = () => {
-      const ctx = getAudioContext();
-      if (ctx) {
-        if (ctx.state === 'suspended') {
-          ctx.resume().catch(() => {});
-        }
-        try {
-          const buffer = ctx.createBuffer(1, 1, 22050);
-          const source = ctx.createBufferSource();
-          source.buffer = buffer;
-          source.connect(ctx.destination);
-          source.start(0);
-        } catch (_) {}
-      }
-      window.removeEventListener('touchstart', unlock);
-      window.removeEventListener('touchend', unlock);
-      window.removeEventListener('click', unlock);
-    };
-
-    window.addEventListener('touchstart', unlock, { passive: true });
-    window.addEventListener('touchend', unlock, { passive: true });
-    window.addEventListener('click', unlock, { passive: true });
-
-    return () => {
-      window.removeEventListener('touchstart', unlock);
-      window.removeEventListener('touchend', unlock);
-      window.removeEventListener('click', unlock);
-    };
-  }, [getAudioContext]);
+    installAudioUnlock();
+  }, []);
 
   /**
    * 细致化真琴机械皮垫闭合音效 (Saxophone Mechanical Leather Pad & Keywork Sound)
@@ -379,7 +406,7 @@ export function useSoundEngine() {
         thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.038);
 
         thudOsc.connect(thudGain);
-        thudGain.connect(ctx.destination);
+        thudGain.connect(getOutput(ctx));
         thudOsc.start(now);
         thudOsc.stop(now + 0.04);
 
@@ -405,7 +432,7 @@ export function useSoundEngine() {
 
         noiseSource.connect(noiseFilter);
         noiseFilter.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
+        noiseGain.connect(getOutput(ctx));
         noiseSource.start(now);
 
         // 3. 蓝钢弹簧与连杆机械轴轻脆卡嗒声 (Click)
@@ -419,7 +446,7 @@ export function useSoundEngine() {
         tickGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.008);
 
         tickOsc.connect(tickGain);
-        tickGain.connect(ctx.destination);
+        tickGain.connect(getOutput(ctx));
         tickOsc.start(now);
         tickOsc.stop(now + 0.009);
       } catch (e) {
@@ -538,7 +565,7 @@ export function useSoundEngine() {
         breathGain.gain.setValueAtTime(register === 'altissimo' ? 0.024 : 0.012, now);
         breathGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
         breathSource.connect(breathGain);
-        breathGain.connect(ctx.destination);
+        breathGain.connect(getOutput(ctx));
         breathSource.start(now);
 
         // 主增益节点与自然包络 (ADSR)
@@ -561,7 +588,7 @@ export function useSoundEngine() {
 
         formantFilter.connect(bodyFilter);
         bodyFilter.connect(masterGain);
-        masterGain.connect(ctx.destination);
+        masterGain.connect(getOutput(ctx));
 
         reedOsc.start(now);
         subOsc.start(now);
@@ -636,7 +663,7 @@ export function useSoundEngine() {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(getOutput(ctx));
 
       osc.start(now);
       osc.stop(now + 0.04);
