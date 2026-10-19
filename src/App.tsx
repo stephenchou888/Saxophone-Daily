@@ -18,8 +18,11 @@ import {
   Moon,
   Sun,
   VolumeX,
+  Repeat,
+  Repeat1,
 } from 'lucide-react';
 import { useTheme } from './hooks/useTheme';
+import { useBeatClock } from './hooks/useBeatClock';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -62,6 +65,13 @@ export default function App() {
   const [currentScale, setCurrentScale] = useState(SCALES[0]);
   const [currentNoteIndex, setCurrentNoteIndex] = useState<number>(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(false);
+  const [demoLoop, setDemoLoop] = useState<boolean>(true);
+  // 节拍器状态提升到 App：节拍器与慢速演示共用 BPM 和节拍时钟（#5、#16）
+  const [bpm, setBpm] = useState<number>(80);
+  const [beatsPerBar, setBeatsPerBar] = useState<number>(4);
+  const [isMetronomeOn, setIsMetronomeOn] = useState<boolean>(false);
+  const [currentBeat, setCurrentBeat] = useState<number>(-1);
+  const beatRef = useRef<number>(-1);
   const [todayDateStr, setTodayDateStr] = useState<string>('');
 
   const { playTone, playClick } = useSoundEngine();
@@ -138,20 +148,52 @@ export default function App() {
 
   const handleSelectNoteIndex = goToNote;
 
-  // Auto-play demo cycle
-  // 计时器通过 ref 调用最新的 handleNextNote，演示中切换乐器或音符后仍使用最新状态（#7）
-  const nextNoteRef = useRef(handleNextNote);
-  nextNoteRef.current = handleNextNote;
+  // 慢速演示：每拍前进一个音；单次模式到最后一个音后自动停止
+  const demoStep = () => {
+    if (!demoLoop && currentNoteIndex >= currentScale.notes.length - 1) {
+      setIsAutoPlaying(false);
+      return;
+    }
+    handleNextNote();
+  };
 
-  useEffect(() => {
-    if (!isAutoPlaying) return;
-    const timer = window.setInterval(() => nextNoteRef.current(), 1100);
-    return () => clearInterval(timer);
-  }, [isAutoPlaying]);
+  // 共用节拍时钟：回调每拍读取最新状态，演示中切换乐器、音阶或 BPM 都即时生效（#7、#5）
+  useBeatClock(bpm, isMetronomeOn || isAutoPlaying, () => {
+    if (isMetronomeOn) {
+      const beat = (beatRef.current + 1) % beatsPerBar;
+      beatRef.current = beat;
+      setCurrentBeat(beat);
+      playClick(beat === 0);
+    }
+    if (isAutoPlaying) demoStep();
+  });
 
   const toggleAutoPlay = () => {
-    if (!isAutoPlaying) playCurrentNote();
+    if (!isAutoPlaying) {
+      // 单次模式下若已在最后一个音，从头开始演示
+      if (!demoLoop && currentNoteIndex >= currentScale.notes.length - 1) goToNote(0);
+      else playCurrentNote();
+    }
     setIsAutoPlaying(!isAutoPlaying);
+  };
+
+  const toggleMetronome = () => {
+    if (isMetronomeOn) {
+      beatRef.current = -1;
+      setCurrentBeat(-1);
+    } else {
+      // 启动时立即响第一拍（强拍）
+      beatRef.current = 0;
+      setCurrentBeat(0);
+      playClick(true);
+    }
+    setIsMetronomeOn(!isMetronomeOn);
+  };
+
+  const handleBeatsPerBarChange = (beats: number) => {
+    setBeatsPerBar(beats);
+    // 换拍号后从下一拍开始按新拍号的第一拍计
+    beatRef.current = -1;
   };
 
   const handleScaleChange = (scaleId: string) => {
@@ -178,7 +220,7 @@ export default function App() {
             <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <Music2 className="size-4" />
             </span>
-            <span className="text-[15px] font-semibold tracking-tight whitespace-nowrap">Saxophone Daily</span>
+            <span className="text-[15px] font-semibold tracking-tight whitespace-nowrap max-[420px]:sr-only">Saxophone Daily</span>
             <Badge variant="outline" className="hidden text-muted-foreground sm:inline-flex">
               基本功研习
             </Badge>
@@ -391,10 +433,24 @@ export default function App() {
                 <Button variant="outline" size="icon" className="size-11" aria-label="下一个音" onClick={handleNextNote}>
                   <SkipForward />
                 </Button>
+                <Toggle
+                  variant="outline"
+                  pressed={demoLoop}
+                  onPressedChange={setDemoLoop}
+                  aria-label={demoLoop ? '循环演示（点击改为单次）' : '单次演示（点击改为循环）'}
+                  title={demoLoop ? '循环演示' : '单次演示：到最后一个音自动停止'}
+                  className="size-11 min-w-0 px-0 data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=off]:text-muted-foreground"
+                >
+                  {demoLoop ? <Repeat /> : <Repeat1 />}
+                </Toggle>
                 <Button variant="outline" className="h-11" onClick={playCurrentNote}>
                   <Volume2 /> 试听
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground max-lg:hidden">
+                演示速度跟随节拍器：<span className="font-mono text-foreground">{bpm} BPM</span>，每拍一个音
+                {demoLoop ? '，循环播放' : '，播放一遍后停止'}
+              </p>
             </CardContent>
           </Card>
 
@@ -407,7 +463,15 @@ export default function App() {
 
           {/* ===================== Metronome & Streak ===================== */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:col-span-5 lg:col-start-1 lg:row-start-2">
-            <Metronome onTick={playClick} />
+            <Metronome
+              bpm={bpm}
+              onBpmChange={setBpm}
+              beatsPerBar={beatsPerBar}
+              onBeatsPerBarChange={handleBeatsPerBarChange}
+              isPlaying={isMetronomeOn}
+              onTogglePlay={toggleMetronome}
+              currentBeat={currentBeat}
+            />
             <StreakCard />
           </div>
         </div>
@@ -436,6 +500,16 @@ export default function App() {
         >
           <DemoIcon className="fill-current" /> {isAutoPlaying ? '停止演示' : '慢速演示'}
         </Button>
+        <Toggle
+          variant="outline"
+          pressed={demoLoop}
+          onPressedChange={setDemoLoop}
+          aria-label={demoLoop ? '循环演示（点击改为单次）' : '单次演示（点击改为循环）'}
+          title={demoLoop ? '循环演示' : '单次演示：到最后一个音自动停止'}
+          className="size-11 min-w-0 px-0 data-[state=on]:bg-transparent data-[state=on]:text-foreground data-[state=off]:text-muted-foreground"
+        >
+          {demoLoop ? <Repeat /> : <Repeat1 />}
+        </Toggle>
         <Button variant="outline" size="icon" className="size-11" aria-label="试听当前音" onClick={playCurrentNote}>
           <Volume2 />
         </Button>

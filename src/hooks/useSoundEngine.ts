@@ -647,7 +647,8 @@ export function useSoundEngine() {
     [playKeyPadClick, playTone]
   );
 
-  const playClick = useCallback(() => {
+  // 节拍声：accent 为每小节第一拍（强拍），音更高更响
+  const playClick = useCallback((accent = false) => {
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -656,10 +657,10 @@ export function useSoundEngine() {
       const gain = ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(1000, ctx.currentTime);
+      osc.frequency.setValueAtTime(accent ? 1600 : 1000, ctx.currentTime);
 
       const now = ctx.currentTime;
-      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.setValueAtTime(accent ? 0.5 : 0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
 
       osc.connect(gain);
