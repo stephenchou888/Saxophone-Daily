@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import abcjs from 'abcjs';
 import { Maximize2, Minimize2, ZoomIn, ZoomOut, Eye, Sparkles, Hash } from 'lucide-react';
 import { ScaleDefinition } from '../types/music';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
+// abcjs 体积较大（约占原构建包一半），按需加载，不阻塞首屏（#12）
+const loadAbcjs = () => import('abcjs').then((m) => m.default);
 
 interface SheetMusicViewProps {
   scale: ScaleDefinition;
@@ -132,43 +134,55 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
     return baseAbc;
   }, [scale, abcNotation, layoutMode, showAccidentals, showNoteNames]);
 
+  // 每次渲染完成后递增，驱动下方的当前音高亮（渲染是异步的）
+  const [renderTick, setRenderTick] = useState(0);
+
   // 渲染乐谱（ABCjs 矢量 SVG）
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    let cancelled = false;
 
-    try {
-      el.innerHTML = '';
-      const containerWidth = scrollWrapperRef.current?.clientWidth || 900;
-      const targetStaffWidth = layoutMode === 'single-line' 
-        ? Math.max(1100, containerWidth - 40)
-        : Math.max(760, containerWidth - 40);
+    loadAbcjs().then((abcjs) => {
+      const el = containerRef.current;
+      if (cancelled || !el) return;
 
-      abcjs.renderAbc(el, activeAbc, {
-        // 窄屏（手机）按原尺寸渲染并横向滑动，避免整行被压缩到屏幕宽度后看不清
-        responsive: containerWidth >= 640 ? 'resize' : undefined,
-        scale: scaleFactor,
-        staffwidth: targetStaffWidth,
-        // 单行模式下强制拉满整行，避免容器变宽后谱面只占左侧一部分
-        format: layoutMode === 'single-line' ? { stretchlast: true } : undefined,
-        add_classes: true,
-        paddingtop: 16,
-        paddingbottom: 16,
-        paddingleft: 18,
-        paddingright: 18,
-      });
+      try {
+        el.innerHTML = '';
+        const containerWidth = scrollWrapperRef.current?.clientWidth || 900;
+        const targetStaffWidth = layoutMode === 'single-line'
+          ? Math.max(1100, containerWidth - 40)
+          : Math.max(760, containerWidth - 40);
 
-      // 为音符添加点击切音交互
-      if (onNoteClick) {
-        const notes = el.querySelectorAll('.abcjs-note');
-        notes.forEach((noteEl, idx) => {
-          (noteEl as HTMLElement).style.cursor = 'pointer';
-          noteEl.addEventListener('click', () => onNoteClick(idx));
+        abcjs.renderAbc(el, activeAbc, {
+          // 窄屏（手机）按原尺寸渲染并横向滑动，避免整行被压缩到屏幕宽度后看不清
+          responsive: containerWidth >= 640 ? 'resize' : undefined,
+          scale: scaleFactor,
+          staffwidth: targetStaffWidth,
+          // 单行模式下强制拉满整行，避免容器变宽后谱面只占左侧一部分
+          format: layoutMode === 'single-line' ? { stretchlast: true } : undefined,
+          add_classes: true,
+          paddingtop: 16,
+          paddingbottom: 16,
+          paddingleft: 18,
+          paddingright: 18,
         });
+
+        // 为音符添加点击切音交互
+        if (onNoteClick) {
+          const notes = el.querySelectorAll('.abcjs-note');
+          notes.forEach((noteEl, idx) => {
+            (noteEl as HTMLElement).style.cursor = 'pointer';
+            noteEl.addEventListener('click', () => onNoteClick(idx));
+          });
+        }
+        setRenderTick((t) => t + 1);
+      } catch (err) {
+        console.error('Error rendering ABC sheet music:', err);
       }
-    } catch (err) {
-      console.error('Error rendering ABC sheet music:', err);
-    }
+    }).catch((err) => console.error('Error loading abcjs:', err));
+
+    return () => {
+      cancelled = true;
+    };
   }, [activeAbc, scaleFactor, layoutMode, onNoteClick]);
 
   // 同步高亮当前正在弹奏/练习的音符
@@ -222,7 +236,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         });
       }
     }
-  }, [currentNoteIndex, activeAbc]);
+  }, [currentNoteIndex, renderTick]);
 
   return (
     <div className="relative w-full overflow-hidden rounded-lg border bg-card">
