@@ -61,6 +61,127 @@ function splitKeyLabel(label: string): { name: string; detail: string } {
   return { name: m[1], detail: parts[parts.length - 1] };
 }
 
+// 高音萨克斯实拍照的按键标注（#6）：坐标为原图像素（1388×6530）。
+// 照片很窄，标签放在左右两侧的留白里，用虚线引向按键。
+const SOPRANO_PHOTO = { width: 1388, height: 6530, gutter: 1500 };
+
+type PhotoKey = { id: string; label: string; x: number; y: number; side: 'left' | 'right'; tone: 'main' | 'palm' | 'pinky' };
+
+const SOPRANO_PHOTO_KEYS: PhotoKey[] = [
+  { id: 'key_octave', label: '8度泛音', x: 760, y: 820, side: 'left', tone: 'main' },
+  { id: 'key_palm_d', label: '掌 D', x: 1014, y: 2050, side: 'right', tone: 'palm' },
+  { id: 'key_palm_eb', label: '掌 E♭', x: 1079, y: 2271, side: 'right', tone: 'palm' },
+  { id: 'key_palm_f', label: '掌 F', x: 1021, y: 2457, side: 'right', tone: 'palm' },
+  { id: 'key_lh_gis', label: 'G♯', x: 1100, y: 2800, side: 'right', tone: 'pinky' },
+  { id: 'key_lh1', label: '1 (B)', x: 779, y: 2143, side: 'left', tone: 'main' },
+  { id: 'key_lh2', label: '2 (A)', x: 800, y: 2436, side: 'left', tone: 'main' },
+  { id: 'key_lh3', label: '3 (G)', x: 893, y: 2626, side: 'left', tone: 'main' },
+  { id: 'key_rh1', label: '4 (F)', x: 717, y: 3425, side: 'left', tone: 'main' },
+  { id: 'key_rh2', label: '5 (E)', x: 720, y: 3692, side: 'left', tone: 'main' },
+  { id: 'key_rh3', label: '6 (D)', x: 692, y: 3917, side: 'left', tone: 'main' },
+];
+
+// 与中音实拍照标注一致的配色：主键琥珀、掌键玫红、小指键靛蓝；激活时更亮
+const PHOTO_TONE = {
+  main: { on: '#f59e0b', off: '#b45309', stroke: '#fef08a' },
+  palm: { on: '#f43f5e', off: '#be185d', stroke: '#fbcfe8' },
+  pinky: { on: '#6366f1', off: '#4338ca', stroke: '#c7d2fe' },
+};
+
+const SopranoPhotoAnnotated: React.FC<{
+  src: string;
+  isKeyActive: (id: string) => boolean;
+  onKey: (id: string) => void;
+}> = ({ src, isKeyActive, onKey }) => {
+  const { width, height, gutter } = SOPRANO_PHOTO;
+  const labelW = 1150;
+  const labelH = 230;
+  const labelGap = 50;
+  // 每侧按纵向位置排开标签，相邻按键太近时把后一个标签往下推，避免重叠
+  const labelCenter = new Map<string, number>();
+  (['left', 'right'] as const).forEach((side) => {
+    let prev = -Infinity;
+    SOPRANO_PHOTO_KEYS.filter((k) => k.side === side)
+      .sort((a, b) => a.y - b.y)
+      .forEach((k) => {
+        const cy = Math.max(k.y, prev + labelH + labelGap);
+        labelCenter.set(k.id, cy);
+        prev = cy;
+      });
+  });
+  return (
+    <svg
+      viewBox={`${-gutter} 0 ${width + gutter * 2} ${height}`}
+      width={421}
+      height={600}
+      role="img"
+      aria-label="高音萨克斯实拍照（含按键标注）"
+      className="mx-auto block h-auto w-full max-w-[421px] drop-shadow-xl"
+    >
+      <image href={src} x={0} y={0} width={width} height={height} />
+      {SOPRANO_PHOTO_KEYS.map((k) => {
+        const active = isKeyActive(k.id);
+        const tone = PHOTO_TONE[k.tone];
+        const labelX = k.side === 'left' ? -gutter + 60 : width + gutter - 60 - labelW;
+        const edgeX = k.side === 'left' ? labelX + labelW : labelX;
+        const cy = labelCenter.get(k.id) ?? k.y;
+        const labelY = cy - labelH / 2;
+        return (
+          <g
+            key={k.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`${KEY_PITCH_MAP[k.id]?.label ?? k.label}，${active ? '按下' : '开放'}`}
+            onClick={() => onKey(k.id)}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onKey(k.id)}
+            className="group cursor-pointer outline-none"
+          >
+            <path
+              d={`M ${edgeX} ${cy} L ${k.x} ${k.y}`}
+              stroke={tone.on}
+              strokeWidth={18}
+              strokeDasharray="60 40"
+              fill="none"
+            />
+            <circle
+              cx={k.x}
+              cy={k.y}
+              r={active ? 95 : 55}
+              fill={active ? tone.on : tone.off}
+              fillOpacity={active ? 0.55 : 0.9}
+              stroke={tone.stroke}
+              strokeWidth={14}
+            />
+            <rect
+              x={labelX}
+              y={labelY}
+              width={labelW}
+              height={labelH}
+              rx={60}
+              fill={active ? tone.on : tone.off}
+              stroke={tone.stroke}
+              strokeWidth={active ? 26 : 14}
+              className="transition-all duration-150 group-hover:brightness-125 group-focus-visible:brightness-125"
+            />
+            <text
+              x={labelX + labelW / 2}
+              y={cy}
+              fontSize={150}
+              fontWeight="bold"
+              fill="#ffffff"
+              textAnchor="middle"
+              dominantBaseline="central"
+              pointerEvents="none"
+            >
+              {k.label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
 interface SaxophoneDiagramProps {
   activeKeys: string[];
   saxType: SaxophoneType;
@@ -225,12 +346,20 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
               <div className="pointer-events-none absolute inset-0 bg-radial from-brand/10 via-transparent to-transparent blur-3xl" />
 
               <div className="relative mx-auto w-fit select-none" style={{ zoom: zoomLevel }}>
-                <img
-                  src={realPhotoSrc}
-                  alt={saxType === 'alto' ? '中音萨克斯实拍照' : '高音萨克斯实拍照'}
-                  referrerPolicy="no-referrer"
-                  className="block h-auto max-h-[520px] w-auto max-w-full object-contain drop-shadow-xl sm:max-h-[600px]"
-                />
+                {showAnnotations && saxType === 'soprano' ? (
+                  <SopranoPhotoAnnotated
+                    src={realPhotoSrc}
+                    isKeyActive={isKeyActive}
+                    onKey={(id) => handleKeyInteraction(id)}
+                  />
+                ) : (
+                  <img
+                    src={realPhotoSrc}
+                    alt={saxType === 'alto' ? '中音萨克斯实拍照' : '高音萨克斯实拍照'}
+                    referrerPolicy="no-referrer"
+                    className="block h-auto max-h-[520px] w-auto max-w-full object-contain drop-shadow-xl sm:max-h-[600px]"
+                  />
+                )}
 
                 {showAnnotations && saxType === 'alto' && (
                   <svg
