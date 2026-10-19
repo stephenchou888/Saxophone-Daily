@@ -62,7 +62,6 @@ export default function App() {
   const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(false);
   const [todayDateStr, setTodayDateStr] = useState<string>('');
 
-  const autoPlayTimerRef = useRef<number | null>(null);
   const { playTone, playClick } = useSoundEngine();
   const { theme, toggleTheme } = useTheme();
 
@@ -114,62 +113,47 @@ export default function App() {
     }
   }, [currentFingering, playTone, saxType]);
 
-  const handlePrevNote = useCallback(() => {
-    setCurrentNoteIndex((prev) => {
-      const nextIdx = prev > 0 ? prev - 1 : currentScale.notes.length - 1;
-      const note = currentScale.notes[nextIdx];
-      const fingering = FINGERINGS[note];
-      if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
-      return nextIdx;
-    });
-  }, [currentScale.notes, playTone, saxType]);
-
-  const handleNextNote = useCallback(() => {
-    setCurrentNoteIndex((prev) => {
-      const nextIdx = prev < currentScale.notes.length - 1 ? prev + 1 : 0;
-      const note = currentScale.notes[nextIdx];
-      const fingering = FINGERINGS[note];
-      if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
-      return nextIdx;
-    });
-  }, [currentScale.notes, playTone, saxType]);
-
-  const handleSelectNoteIndex = useCallback(
+  // 切到指定音并发声。发声放在 setState 之外：更新函数必须是纯函数，
+  // StrictMode 开发模式下会被调用两次，副作用会导致一个音响两次（#8）
+  const goToNote = useCallback(
     (index: number) => {
-      if (index >= 0 && index < currentScale.notes.length) {
-        setCurrentNoteIndex(index);
-        const note = currentScale.notes[index];
-        const fingering = FINGERINGS[note];
-        if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
-      }
+      if (index < 0 || index >= currentScale.notes.length) return;
+      setCurrentNoteIndex(index);
+      const fingering = FINGERINGS[currentScale.notes[index]];
+      if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
     },
     [currentScale.notes, playTone, saxType]
   );
 
+  const handlePrevNote = useCallback(() => {
+    goToNote(currentNoteIndex > 0 ? currentNoteIndex - 1 : currentScale.notes.length - 1);
+  }, [goToNote, currentNoteIndex, currentScale.notes.length]);
+
+  const handleNextNote = useCallback(() => {
+    goToNote(currentNoteIndex < currentScale.notes.length - 1 ? currentNoteIndex + 1 : 0);
+  }, [goToNote, currentNoteIndex, currentScale.notes.length]);
+
+  const handleSelectNoteIndex = goToNote;
+
   // Auto-play demo cycle
-  const toggleAutoPlay = () => {
-    if (isAutoPlaying) {
-      if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
-      setIsAutoPlaying(false);
-    } else {
-      setIsAutoPlaying(true);
-      playCurrentNote();
-      autoPlayTimerRef.current = window.setInterval(() => {
-        handleNextNote();
-      }, 1100);
-    }
-  };
+  // 计时器通过 ref 调用最新的 handleNextNote，演示中切换乐器或音符后仍使用最新状态（#7）
+  const nextNoteRef = useRef(handleNextNote);
+  nextNoteRef.current = handleNextNote;
 
   useEffect(() => {
-    return () => {
-      if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
-    };
-  }, []);
+    if (!isAutoPlaying) return;
+    const timer = window.setInterval(() => nextNoteRef.current(), 1100);
+    return () => clearInterval(timer);
+  }, [isAutoPlaying]);
+
+  const toggleAutoPlay = () => {
+    if (!isAutoPlaying) playCurrentNote();
+    setIsAutoPlaying(!isAutoPlaying);
+  };
 
   const handleScaleChange = (scaleId: string) => {
     const found = SCALES.find((s) => s.id === scaleId);
     if (found) {
-      if (autoPlayTimerRef.current) clearInterval(autoPlayTimerRef.current);
       setIsAutoPlaying(false);
       setCurrentScale(found);
       setCurrentNoteIndex(0);
