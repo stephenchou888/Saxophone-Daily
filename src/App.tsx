@@ -185,7 +185,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background pb-24 text-foreground touch-manipulation lg:pb-0">
       {/* ===================== App Bar: Logo + Instrument ===================== */}
-      <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
+      <header data-fit-reserve="top" className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex min-h-14 max-w-[1280px] items-center justify-between gap-3 px-4 sm:px-8">
           <div className="flex items-center gap-2">
             <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -229,18 +229,25 @@ export default function App() {
 
       <main className="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pt-4 sm:px-8">
         {/* ===================== Today's Scale ===================== */}
-        <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 space-y-2">
-            <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+        {/* 桌面端压成一行（标题 + 标签 + 日期 | 调性选择），给下方谱面与指法图让出首屏高度 */}
+        <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-2 lg:space-y-0">
+            <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground lg:hidden">
               <Calendar className="size-3.5" />
               {todayDateStr} · 今日主修
             </div>
-            <h1 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">{scaleShortName(currentScale)}</h1>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {currentScale.category && <Badge variant="secondary">{CATEGORY_LABEL[currentScale.category]}</Badge>}
-              <Badge variant="outline" className="text-muted-foreground">
-                {currentScale.keySig}
-              </Badge>
+            <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-3">
+              <h1 className="text-2xl leading-tight font-semibold tracking-tight">{scaleShortName(currentScale)}</h1>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {currentScale.category && <Badge variant="secondary">{CATEGORY_LABEL[currentScale.category]}</Badge>}
+                <Badge variant="outline" className="text-muted-foreground">
+                  {currentScale.keySig}
+                </Badge>
+                <span className="ml-1 hidden items-center gap-1.5 text-[13px] text-muted-foreground lg:inline-flex">
+                  <Calendar className="size-3.5" />
+                  {todayDateStr} · 今日主修
+                </span>
+              </div>
             </div>
           </div>
 
@@ -268,10 +275,11 @@ export default function App() {
         </section>
 
         {/* ===================== Sheet Music + Note Strip ===================== */}
-        <Card className="gap-3 py-3 sm:py-5">
-          <CardContent className="space-y-3 px-3 sm:space-y-4 sm:px-6">
-            <div className="flex items-center justify-between gap-3 sm:items-start">
-              <div className="flex min-w-0 items-baseline gap-2 sm:block">
+        {/* 手机 / 平板端谱面吸顶：往下滚到指法图时谱面仍在视野内，配合底部控制条无需来回滚动 */}
+        <Card data-fit-reserve="top" className="sticky top-14 z-20 gap-3 py-3 shadow-sm sm:py-5 lg:static lg:py-4 lg:shadow-xs">
+          <CardContent className="space-y-3 px-3 sm:space-y-4 sm:px-6 lg:space-y-3">
+            <div className="flex items-center justify-between gap-3 sm:items-start lg:items-center">
+              <div className="flex min-w-0 items-baseline gap-2 sm:block lg:flex">
                 <h2 className="text-base font-semibold">五线谱视奏</h2>
                 <p className="text-xs text-muted-foreground sm:text-[13px]">
                   <span className="sm:hidden">左右滑动查看</span>
@@ -293,7 +301,8 @@ export default function App() {
             />
 
             {/* 音名按钮：已练过的灰掉，当前音高亮，点击跳转 */}
-            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+            {/* 手机端隐藏以压低吸顶谱面的高度：谱上音符可直接点，上一个 / 下一个在底部控制条 */}
+            <div className="-mx-1 hidden gap-1.5 px-1 sm:flex sm:flex-wrap">
               {currentScale.notes.map((n, idx) => (
                 <Button
                   key={`${n}-${idx}`}
@@ -426,6 +435,7 @@ export default function App() {
 
       {/* ===================== Mobile Bottom Control Bar ===================== */}
       <nav
+        data-fit-reserve="bottom"
         aria-label="演奏控制"
         className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t bg-background/95 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] backdrop-blur lg:hidden"
       >

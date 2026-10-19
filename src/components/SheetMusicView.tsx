@@ -32,7 +32,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   // 提示升降号开关 (Default: true，在音符上直接绘制 #/b 升降号标记)
   const [showAccidentals, setShowAccidentals] = useState<boolean>(true);
   // 音名唱名显示开关 (Default: true，在音符下方标注音名如 C#, F#, G#)
-  const [showNoteNames, setShowNoteNames] = useState<boolean>(true);
+  // 桌面端谱面下方已有音名按钮，默认不再重复标注，省出首屏高度
+  const [showNoteNames, setShowNoteNames] = useState<boolean>(() => window.innerWidth < 1024);
 
   // 计算本调需要升降的特征音符列表
   const alteredNotes = useMemo(() => {
@@ -93,8 +94,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         }
       });
 
-      const cleanTitle = scale.name.split(' (')[0];
-      const header = `X:1\nT:${cleanTitle} 视奏练习\nM:4/4\nL:1/4\nK:${keySig}`;
+      // 不写 T: 标题：页头已显示音阶名，谱面里再画一行标题会多占约 50px 高度
+      const header = `X:1\nM:4/4\nL:1/4\nK:${keySig}`;
 
       if (layoutMode === 'single-line') {
         const musicLine = measures.join(' | ') + ' |]';
@@ -152,8 +153,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         // 单行模式下强制拉满整行，避免容器变宽后谱面只占左侧一部分
         format: layoutMode === 'single-line' ? { stretchlast: true } : undefined,
         add_classes: true,
-        paddingtop: 16,
-        paddingbottom: 16,
+        paddingtop: 8,
+        paddingbottom: 8,
         paddingleft: 18,
         paddingright: 18,
       });
@@ -228,9 +229,24 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
     <div className="relative w-full overflow-hidden rounded-lg border bg-card">
       {/* 顶部控制栏：升降号标记、音名显示、单双行切换、缩放 */}
       <div className="flex items-center justify-between gap-3 overflow-x-auto border-b bg-muted/40 px-3 py-1.5 sm:flex-wrap sm:px-4 sm:py-2">
-        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+        <div className="hidden shrink-0 items-center gap-2 sm:flex lg:hidden">
           <span className="size-2 rounded-full bg-brand" />
           <span className="text-xs font-medium text-muted-foreground">本位移调记谱 · 视谱即吹</span>
+        </div>
+
+        {/* 桌面端把升降号指引并入工具栏，省掉下面单独的一行 */}
+        <div className="hidden shrink-0 items-center gap-1.5 lg:flex">
+          <Sparkles className="size-3.5 text-brand" />
+          <span className="text-xs font-medium text-muted-foreground">本调升降</span>
+          {alteredNotes.length > 0 ? (
+            alteredNotes.map((note) => (
+              <Badge key={note} variant="soft" className="font-mono font-semibold">
+                {note}
+              </Badge>
+            ))
+          ) : (
+            <Badge variant="success">全本位自然音</Badge>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-x-4 gap-y-2 sm:flex-wrap">
@@ -290,7 +306,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       </div>
 
       {/* 调性升降号特征快速指引条（让初学者一目了然需要升降哪些音） */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto border-b px-3 py-1.5 text-xs sm:px-4">
+      <div className="hidden items-center justify-between gap-2 overflow-x-auto border-b px-3 py-1.5 text-xs sm:flex sm:px-4 lg:hidden">
         <div className="flex shrink-0 items-center gap-2 sm:flex-wrap">
           <span className="flex shrink-0 items-center gap-1 font-medium text-muted-foreground">
             <Sparkles className="size-3.5 text-brand" />
@@ -316,7 +332,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       {/* 五线谱渲染区域 */}
       <div
         ref={scrollWrapperRef}
-        className="w-full overflow-x-auto min-h-[96px] sm:min-h-[120px] p-1 sm:px-3 sm:py-1 text-center select-none bg-white text-slate-900 scroll-smooth"
+        className="w-full overflow-x-auto min-h-[96px] sm:min-h-[120px] lg:min-h-[80px] p-1 sm:px-3 sm:py-1 text-center select-none bg-white text-slate-900 scroll-smooth"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <div
