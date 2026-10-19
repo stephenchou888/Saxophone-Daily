@@ -81,13 +81,15 @@ export const StreakCard: React.FC = () => {
   };
 
   return (
-    <Card className="gap-4 text-center">
-      <CardHeader className="justify-items-center">
-        <CardTitle className="flex items-center gap-2 text-xs tracking-wide text-muted-foreground uppercase">
+    // 手机端压缩为横条：左侧天数，右侧打卡按钮
+    <Card className="gap-4 text-center max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:px-4 max-sm:py-3 max-sm:text-left">
+      <CardHeader className="justify-items-center max-sm:min-w-0 max-sm:flex-1 max-sm:justify-items-start max-sm:gap-1 max-sm:px-0">
+        <CardTitle className="flex items-center gap-2 text-xs tracking-wide text-muted-foreground uppercase max-sm:hidden">
           <Flame className="size-5 fill-current text-primary animate-bounce" />
           Daily Streak
         </CardTitle>
-        <CardDescription className="flex items-center justify-center gap-2 pt-1 text-base font-semibold text-foreground">
+        <CardDescription className="flex items-center justify-center gap-2 pt-1 text-base font-semibold text-foreground max-sm:pt-0 max-sm:text-sm max-sm:whitespace-nowrap">
+          <Flame className="size-4 fill-current text-primary sm:hidden" />
           已连续练习打卡
           <span className="font-mono text-3xl font-bold tracking-tight text-success">{streak}</span>
           天
@@ -95,22 +97,22 @@ export const StreakCard: React.FC = () => {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <p className="text-xs text-muted-foreground">{statusMessage}</p>
+      <CardContent className="space-y-4 max-sm:shrink-0 max-sm:px-0">
+        <p className="text-xs text-muted-foreground max-sm:hidden">{statusMessage}</p>
         <Button
           size="lg"
           variant={hasCheckedInToday ? 'outline' : 'success'}
-          className="w-full disabled:opacity-100 disabled:text-success"
+          className="w-full disabled:opacity-100 disabled:text-success max-sm:h-9 max-sm:px-3"
           onClick={handleCheckin}
           disabled={hasCheckedInToday}
         >
           {hasCheckedInToday ? (
             <>
-              <CheckCircle2 /> 今日练习已打卡
+              <CheckCircle2 /> <span className="max-sm:hidden">今日练习已打卡</span><span className="sm:hidden">已打卡</span>
             </>
           ) : (
             <>
-              <Sparkles /> 完成今日练习打卡
+              <Sparkles /> <span className="max-sm:hidden">完成今日练习打卡</span><span className="sm:hidden">打卡</span>
             </>
           )}
         </Button>

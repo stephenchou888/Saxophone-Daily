@@ -54,7 +54,7 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   onKeyClick,
 }) => {
   // View mode: 'split' (实物与图例双屏对照), 'diagram' (高精交互指法图谱), 'photo' (真实实物写真)
-  const [viewMode, setViewMode] = useState<'split' | 'diagram' | 'photo'>('split');
+  const [viewMode, setViewMode] = useState<'split' | 'diagram' | 'photo'>('diagram');
   const [showAnnotations, setShowAnnotations] = useState<boolean>(true);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
@@ -138,16 +138,17 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
 
   return (
     <div className="flex w-full flex-col items-center justify-center gap-3 select-none">
-      {/* ===================== Top Controls & View Switcher ===================== */}
+      {/* ===================== Header: Title + View Switcher (示意图 / 实物图 / 双屏) ===================== */}
       <div className="flex w-full flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-sm font-bold text-primary sm:text-base">
-            <Sparkles className="size-4 shrink-0 sm:size-5" />
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">指法图示</h2>
+          <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            <Sparkles className="size-3.5 shrink-0 text-primary" />
             {saxType === 'alto' ? '中音萨克斯 (Eb Alto · 降E调)' : '高音萨克斯 (Bb Soprano · 降B调)'}
-          </span>
-          <Badge variant="soft" className="hidden sm:inline-flex">
-            {saxType === 'alto' ? '实音低大六度 (移调 -9 半音)' : '实音低大二度 (移调 -2 半音)'}
-          </Badge>
+            <Badge variant="soft" className="hidden sm:inline-flex">
+              {saxType === 'alto' ? '实音低大六度 (移调 -9 半音)' : '实音低大二度 (移调 -2 半音)'}
+            </Badge>
+          </p>
         </div>
 
         <ToggleGroup
@@ -157,124 +158,16 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
           value={viewMode}
           onValueChange={(v) => v && setViewMode(v as typeof viewMode)}
         >
+          <ToggleGroupItem value="diagram" className="px-3 text-xs font-semibold">
+            <Sliders className="size-3.5" /> 示意图
+          </ToggleGroupItem>
+          <ToggleGroupItem value="photo" className="px-3 text-xs font-semibold">
+            <Camera className="size-3.5" /> 实物图
+          </ToggleGroupItem>
           <ToggleGroupItem value="split" className="px-3 text-xs font-semibold">
             <Layers className="size-3.5" /> 双屏对照
           </ToggleGroupItem>
-          <ToggleGroupItem value="photo" className="px-3 text-xs font-semibold">
-            <Camera className="size-3.5" /> 真实写真
-          </ToggleGroupItem>
-          <ToggleGroupItem value="diagram" className="px-3 text-xs font-semibold">
-            <Sliders className="size-3.5" /> 高精指法图
-          </ToggleGroupItem>
         </ToggleGroup>
-      </div>
-
-      {/* Sub-bar: Zoom Controls + Register Switcher + Sound Engine Modes */}
-      <div className="flex w-full flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-0.5 rounded-lg bg-muted p-[3px]">
-          <span className="px-1.5 text-[11px] text-muted-foreground">缩放</span>
-          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleZoomOut} title="缩小">
-            <ZoomOut className="size-3.5" />
-          </Button>
-          <span className="min-w-[40px] text-center font-mono text-[11px] font-semibold text-primary">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleZoomIn} title="放大">
-            <ZoomIn className="size-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleResetZoom} title="还原原始比例">
-            <RotateCcw className="size-3" />
-          </Button>
-        </div>
-
-        {/* 音区快捷切换 */}
-        <div className="flex items-center gap-1.5">
-          <span className="hidden text-[11px] text-muted-foreground sm:inline-block">试听音区</span>
-          <ToggleGroup
-            type="single"
-            variant="pill"
-            size="sm"
-            value={register}
-            onValueChange={(v) => v && setRegister(v as SaxRegister)}
-          >
-            <ToggleGroupItem value="low" className="h-7 px-2.5 text-[11px]">
-              低/中八度
-            </ToggleGroupItem>
-            <ToggleGroupItem value="high" className="h-7 px-2.5 text-[11px]">
-              <Zap className="size-3 fill-current" /> 高八度 (+8ve)
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="altissimo"
-              className="h-7 px-2.5 text-[11px] data-[state=on]:bg-destructive data-[state=on]:text-white"
-            >
-              <Flame className="size-3.5 fill-current text-amber-400" /> 超吹 (Altissimo)
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-
-        {/* Sound Feedback mode & Mute */}
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            type="single"
-            variant="pill"
-            size="sm"
-            value={soundMode}
-            onValueChange={(v) => v && setSoundMode(v as typeof soundMode)}
-          >
-            <ToggleGroupItem value="both" className="h-7 px-2 text-[11px]">
-              键音+乐音
-            </ToggleGroupItem>
-            <ToggleGroupItem value="tone" className="h-7 px-2 text-[11px]">
-              仅乐音
-            </ToggleGroupItem>
-            <ToggleGroupItem value="click" className="h-7 px-2 text-[11px]">
-              仅机械声
-            </ToggleGroupItem>
-          </ToggleGroup>
-
-          <Toggle
-            variant="outline"
-            size="sm"
-            pressed={isMuted}
-            onPressedChange={setIsMuted}
-            title="静音开关"
-            aria-label="静音开关"
-            className="text-success data-[state=on]:border-destructive/40 data-[state=on]:bg-destructive/15 data-[state=on]:text-destructive"
-          >
-            {isMuted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
-          </Toggle>
-        </div>
-      </div>
-
-      {/* ===================== Real-time Sound & Pitch Feedback Banner ===================== */}
-      <div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3.5 py-2 text-xs">
-        {lastPlayedKey ? (
-          <div className="flex flex-wrap items-center gap-2 font-semibold">
-            <Badge variant={lastPlayedKey.register === 'altissimo' ? 'destructive' : 'soft'}>
-              {lastPlayedKey.register === 'altissimo'
-                ? '🔥 超吹 Altissimo'
-                : lastPlayedKey.register === 'high'
-                ? '⚡ 高八度'
-                : '🎵 标准音区'}
-            </Badge>
-            <span className="font-bold">{lastPlayedKey.label}</span>
-            <span className="text-[11px] text-muted-foreground">
-              记谱音: <b className="text-primary">{lastPlayedKey.writtenNote}</b> ({lastPlayedKey.writtenFreq}Hz)
-            </span>
-            <Badge variant="outline" className="bg-card">
-              {saxType === 'alto' ? '中音实音 (Eb)' : '高音实音 (Bb)'}:
-              <b className="text-success">{lastPlayedKey.concertNote}</b> ({lastPlayedKey.concertFreq}Hz)
-            </Badge>
-          </div>
-        ) : (
-          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Info className="size-3.5 shrink-0 text-primary" />
-            点击任意按钮或音孔即可即时试听
-          </span>
-        )}
-        <span className="hidden text-[11px] font-semibold text-primary md:block">
-          当前乐器: {saxType === 'alto' ? '经典弯管中音 (Eb Alto)' : '通体直管高音 (Bb Soprano)'}
-        </span>
       </div>
 
       {/* ===================== Main Instrument Display Box ===================== */}
@@ -616,6 +509,116 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Toolbar: Zoom + Register Switcher + Sound Engine Modes（放在图示下方，保证首屏先看到按键高亮） */}
+      <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 border-t pt-3">
+        <div className="flex items-center gap-0.5 rounded-lg bg-muted p-[3px]">
+          <span className="px-1.5 text-[11px] text-muted-foreground">缩放</span>
+          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleZoomOut} title="缩小">
+            <ZoomOut className="size-3.5" />
+          </Button>
+          <span className="min-w-[40px] text-center font-mono text-[11px] font-semibold text-primary">
+            {Math.round(zoomLevel * 100)}%
+          </span>
+          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleZoomIn} title="放大">
+            <ZoomIn className="size-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleResetZoom} title="还原原始比例">
+            <RotateCcw className="size-3" />
+          </Button>
+        </div>
+
+        {/* 音区快捷切换 */}
+        <div className="flex items-center gap-1.5">
+          <span className="hidden text-[11px] text-muted-foreground sm:inline-block">试听音区</span>
+          <ToggleGroup
+            type="single"
+            variant="pill"
+            size="sm"
+            value={register}
+            onValueChange={(v) => v && setRegister(v as SaxRegister)}
+          >
+            <ToggleGroupItem value="low" className="h-7 px-2.5 text-[11px]">
+              低/中八度
+            </ToggleGroupItem>
+            <ToggleGroupItem value="high" className="h-7 px-2.5 text-[11px]">
+              <Zap className="size-3 fill-current" /> 高八度 (+8ve)
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="altissimo"
+              className="h-7 px-2.5 text-[11px] data-[state=on]:bg-destructive data-[state=on]:text-white"
+            >
+              <Flame className="size-3.5 fill-current text-amber-400" /> 超吹 (Altissimo)
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        {/* Sound Feedback mode & Mute */}
+        <div className="flex items-center gap-2">
+          <ToggleGroup
+            type="single"
+            variant="pill"
+            size="sm"
+            value={soundMode}
+            onValueChange={(v) => v && setSoundMode(v as typeof soundMode)}
+          >
+            <ToggleGroupItem value="both" className="h-7 px-2 text-[11px]">
+              键音+乐音
+            </ToggleGroupItem>
+            <ToggleGroupItem value="tone" className="h-7 px-2 text-[11px]">
+              仅乐音
+            </ToggleGroupItem>
+            <ToggleGroupItem value="click" className="h-7 px-2 text-[11px]">
+              仅机械声
+            </ToggleGroupItem>
+          </ToggleGroup>
+
+          <Toggle
+            variant="outline"
+            size="sm"
+            pressed={isMuted}
+            onPressedChange={setIsMuted}
+            title="静音开关"
+            aria-label="静音开关"
+            className="text-success data-[state=on]:border-destructive/40 data-[state=on]:bg-destructive/15 data-[state=on]:text-destructive"
+          >
+            {isMuted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
+          </Toggle>
+        </div>
+      </div>
+
+
+
+      {/* ===================== Real-time Sound & Pitch Feedback Banner ===================== */}
+      <div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3.5 py-2 text-xs">
+        {lastPlayedKey ? (
+          <div className="flex flex-wrap items-center gap-2 font-semibold">
+            <Badge variant={lastPlayedKey.register === 'altissimo' ? 'destructive' : 'soft'}>
+              {lastPlayedKey.register === 'altissimo'
+                ? '🔥 超吹 Altissimo'
+                : lastPlayedKey.register === 'high'
+                ? '⚡ 高八度'
+                : '🎵 标准音区'}
+            </Badge>
+            <span className="font-bold">{lastPlayedKey.label}</span>
+            <span className="text-[11px] text-muted-foreground">
+              记谱音: <b className="text-primary">{lastPlayedKey.writtenNote}</b> ({lastPlayedKey.writtenFreq}Hz)
+            </span>
+            <Badge variant="outline" className="bg-card">
+              {saxType === 'alto' ? '中音实音 (Eb)' : '高音实音 (Bb)'}:
+              <b className="text-success">{lastPlayedKey.concertNote}</b> ({lastPlayedKey.concertFreq}Hz)
+            </Badge>
+          </div>
+        ) : (
+          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Info className="size-3.5 shrink-0 text-primary" />
+            点击任意按钮或音孔即可即时试听
+          </span>
+        )}
+        <span className="hidden text-[11px] font-semibold text-primary md:block">
+          当前乐器: {saxType === 'alto' ? '经典弯管中音 (Eb Alto)' : '通体直管高音 (Bb Soprano)'}
+        </span>
       </div>
     </div>
   );
