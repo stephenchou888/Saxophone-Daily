@@ -14,6 +14,7 @@ import {
   Play,
   Square,
   Calendar,
+  RotateCcw,
   Music2,
   Moon,
   Sun,
@@ -23,32 +24,14 @@ import {
 } from 'lucide-react';
 import { useTheme } from './hooks/useTheme';
 import { useBeatClock } from './hooks/useBeatClock';
+import { getTodayScale, scaleDisplayName } from './lib/dailyScale';
+import { ScalePicker } from './components/ScalePicker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-
-// 下拉菜单中的音阶分组
-const SCALE_GROUPS: { category: NonNullable<ScaleDefinition['category']>; label: string }[] = [
-  { category: 'special', label: '特训与特色音阶' },
-  { category: 'major', label: '五度圈 12 个自然大调' },
-  { category: 'minor', label: '自然小调' },
-  { category: 'harmonic_minor', label: '和声小调' },
-];
-
-const scaleShortName = (s: ScaleDefinition) => s.name.split(' (')[0];
 
 const CATEGORY_LABEL: Record<NonNullable<ScaleDefinition['category']>, string> = {
   special: '特色音阶',
@@ -62,7 +45,9 @@ const prettyNote = (n: string) => n.replace('#', '♯').replace(/^([A-G])b/, '$1
 
 export default function App() {
   const [saxType, setSaxType] = useState<SaxophoneType>('alto');
-  const [currentScale, setCurrentScale] = useState(SCALES[0]);
+  // 今日推荐调性在页面加载时确定（#15）
+  const [todayScale] = useState(() => getTodayScale());
+  const [currentScale, setCurrentScale] = useState(todayScale);
   const [currentNoteIndex, setCurrentNoteIndex] = useState<number>(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(false);
   const [demoLoop, setDemoLoop] = useState<boolean>(true);
@@ -88,12 +73,6 @@ export default function App() {
       weekday: 'long',
     };
     setTodayDateStr(now.toLocaleDateString('zh-CN', dateOpts));
-
-    const startOfYear = new Date(now.getFullYear(), 0, 0).getTime();
-    const dayOfYear = Math.floor((now.getTime() - startOfYear) / (1000 * 60 * 60 * 24));
-    const scaleIdx = dayOfYear % SCALES.length;
-    setCurrentScale(SCALES[scaleIdx]);
-    setCurrentNoteIndex(0);
   }, []);
 
   const currentNoteName = currentScale.notes[currentNoteIndex] || 'C4';
@@ -274,7 +253,7 @@ export default function App() {
               <Calendar className="size-3.5" />
               {todayDateStr} · 今日主修
             </div>
-            <h1 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">{scaleShortName(currentScale)}</h1>
+            <h1 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">{scaleDisplayName(currentScale)}</h1>
             <div className="flex flex-wrap items-center gap-1.5">
               {currentScale.category && <Badge variant="secondary">{CATEGORY_LABEL[currentScale.category]}</Badge>}
               <Badge variant="outline" className="text-muted-foreground">
@@ -283,26 +262,19 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex w-full items-center gap-2 sm:w-72 sm:shrink-0">
-            <span className="shrink-0 text-xs font-medium text-muted-foreground">切换调性</span>
-            <Select value={currentScale.id} onValueChange={handleScaleChange}>
-              <SelectTrigger className="w-full min-w-0 bg-card font-medium">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end" className="max-h-[380px]">
-                {SCALE_GROUPS.map((group, gi) => (
-                  <SelectGroup key={group.category}>
-                    {gi > 0 && <SelectSeparator />}
-                    <SelectLabel className="font-medium">{group.label}</SelectLabel>
-                    {SCALES.filter((s) => s.category === group.category).map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {scaleShortName(s)} <span className="font-mono text-xs text-muted-foreground">{s.accidentals}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
+            <Button
+              variant="outline"
+              className="shrink-0 bg-card text-muted-foreground"
+              onClick={() => handleScaleChange(todayScale.id)}
+              disabled={currentScale.id === todayScale.id}
+              title={currentScale.id === todayScale.id ? '已是今日推荐' : `回到今日推荐：${scaleDisplayName(todayScale)}`}
+              aria-label={currentScale.id === todayScale.id ? '已是今日推荐' : '回到今日推荐'}
+            >
+              <RotateCcw />
+              <span className="max-sm:hidden">{currentScale.id === todayScale.id ? '已是今日推荐' : '今日推荐'}</span>
+            </Button>
+            <ScalePicker value={currentScale} onChange={handleScaleChange} />
           </div>
         </section>
 
