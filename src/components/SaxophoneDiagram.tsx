@@ -510,7 +510,6 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
                       key={k.id}
                       type="button"
                       aria-label={`${KEY_PITCH_MAP[k.id]?.label ?? k.label}，${active ? '按下' : '开放'}`}
-                      aria-pressed={active}
                       onClick={() => handleKeyInteraction(k.id)}
                       className={cn(
                         'absolute flex cursor-pointer items-center justify-center p-0 transition-[background-color,border-color,transform] outline-none hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-ring/50',
