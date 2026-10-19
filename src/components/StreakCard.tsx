@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, CheckCircle2, Sparkles, Trophy } from 'lucide-react';
+import { Flame, CheckCircle2, Check, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const STORAGE_KEY = 'sax_daily_streak_v1';
 
@@ -79,48 +81,42 @@ export const StreakCard: React.FC = () => {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card text-card-foreground p-6 shadow-sm text-center">
-      <div className="flex items-center justify-center gap-2 mb-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-          <Flame className="w-6 h-6 fill-current animate-bounce text-amber-500" />
-        </div>
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Daily Streak
-        </span>
-      </div>
+    // 手机端压缩为横条：左侧天数，右侧打卡按钮
+    <Card className="gap-4 text-center max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:px-4 max-sm:py-3 max-sm:text-left">
+      <CardHeader className="justify-items-center max-sm:min-w-0 max-sm:flex-1 max-sm:justify-items-start max-sm:gap-1 max-sm:px-0">
+        <CardTitle className="flex items-center gap-2 text-[15px] max-sm:hidden">
+          <Flame className="size-4 fill-current text-brand" />
+          连续打卡
+        </CardTitle>
+        <CardDescription className="flex items-center justify-center gap-2 pt-1 text-base font-semibold text-foreground max-sm:pt-0 max-sm:text-sm max-sm:whitespace-nowrap">
+          <Flame className="size-4 fill-current text-brand sm:hidden" />
+          已连续练习打卡
+          <span className="text-3xl font-semibold tracking-tight tabular-nums max-sm:text-xl">{streak}</span>
+          天
+          {streak >= 3 && <Trophy className="ml-1 size-5 fill-brand text-brand" />}
+        </CardDescription>
+      </CardHeader>
 
-      <div className="flex items-center justify-center gap-2 my-2">
-        <span className="text-foreground font-semibold text-base">已连续练习打卡</span>
-        <span className="text-3xl font-bold text-emerald-400 font-mono tracking-tight">
-          {streak}
-        </span>
-        <span className="text-foreground font-semibold text-base">天</span>
-        {streak >= 3 && (
-          <Trophy className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse ml-1" />
-        )}
-      </div>
-
-      <p className="text-xs text-muted-foreground mb-5">{statusMessage}</p>
-
-      <button
-        onClick={handleCheckin}
-        disabled={hasCheckedInToday}
-        className={`w-full py-3 px-6 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-          hasCheckedInToday
-            ? 'bg-secondary text-emerald-400 border border-emerald-500/30 cursor-default'
-            : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 shadow-emerald-500/20 active:scale-[0.99] cursor-pointer'
-        }`}
-      >
-        {hasCheckedInToday ? (
-          <>
-            <CheckCircle2 className="w-4 h-4" /> 今日练习已打卡
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-4 h-4" /> 完成今日练习打卡
-          </>
-        )}
-      </button>
-    </div>
+      <CardContent className="space-y-4 max-sm:shrink-0 max-sm:px-0">
+        <p className="text-xs text-muted-foreground max-sm:hidden">{statusMessage}</p>
+        <Button
+          size="lg"
+          variant={hasCheckedInToday ? 'secondary' : 'outline'}
+          className="w-full disabled:opacity-100 disabled:text-success max-sm:h-9 max-sm:px-3"
+          onClick={handleCheckin}
+          disabled={hasCheckedInToday}
+        >
+          {hasCheckedInToday ? (
+            <>
+              <CheckCircle2 /> <span className="max-sm:hidden">今日练习已打卡</span><span className="sm:hidden">已打卡</span>
+            </>
+          ) : (
+            <>
+              <Check /> <span className="max-sm:hidden">完成今日打卡</span><span className="sm:hidden">打卡</span>
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
   );
 };

@@ -2,9 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { SaxophoneType } from '../types/music';
 import {
   Camera,
-  Sparkles,
-  Layers,
-  Sliders,
   Eye,
   Volume2,
   VolumeX,
@@ -21,6 +18,51 @@ import {
   SaxRegister,
   getSaxSoundingPitch,
 } from '../hooks/useSoundEngine';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Toggle } from '@/components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
+
+// 示意图按键布局（坐标取自设计稿，画布 300×548）。shape: hole = 主音孔圆键，pill = 叉键，key = 侧键/掌键/小指键
+type SchematicKey = { id: string; label: string; x: number; y: number; w: number; h: number; shape: 'hole' | 'pill' | 'key' };
+
+const SCHEMATIC_KEYS: SchematicKey[] = [
+  { id: 'key_octave', label: '8va', x: 30, y: 34, w: 26, h: 26, shape: 'pill' },
+  { id: 'key_front_f', label: '前 F', x: 116, y: 40, w: 68, h: 18, shape: 'pill' },
+  { id: 'key_palm_d', label: '掌 D', x: 222, y: 14, w: 52, h: 20, shape: 'key' },
+  { id: 'key_palm_eb', label: '掌 E♭', x: 222, y: 40, w: 52, h: 20, shape: 'key' },
+  { id: 'key_palm_f', label: '掌 F', x: 222, y: 66, w: 52, h: 20, shape: 'key' },
+  { id: 'key_lh1', label: '1', x: 124, y: 104, w: 52, h: 52, shape: 'hole' },
+  { id: 'key_lh2', label: '2', x: 124, y: 166, w: 52, h: 52, shape: 'hole' },
+  { id: 'key_lh3', label: '3', x: 124, y: 228, w: 52, h: 52, shape: 'hole' },
+  { id: 'key_lh_gis', label: 'G♯', x: 192, y: 244, w: 48, h: 20, shape: 'key' },
+  { id: 'key_lh_cis', label: '低 C♯', x: 52, y: 206, w: 52, h: 20, shape: 'key' },
+  { id: 'key_lh_low_b', label: '低 B', x: 52, y: 232, w: 52, h: 20, shape: 'key' },
+  { id: 'key_lh_low_bb', label: '低 B♭', x: 52, y: 258, w: 52, h: 20, shape: 'key' },
+  { id: 'key_rh1', label: '4', x: 124, y: 314, w: 52, h: 52, shape: 'hole' },
+  { id: 'key_rh2', label: '5', x: 124, y: 376, w: 52, h: 52, shape: 'hole' },
+  { id: 'key_rh3', label: '6', x: 124, y: 438, w: 52, h: 52, shape: 'hole' },
+  { id: 'key_side_c', label: '侧 C', x: 196, y: 318, w: 52, h: 20, shape: 'key' },
+  { id: 'key_side_bb', label: '侧 B♭', x: 196, y: 344, w: 52, h: 20, shape: 'key' },
+  { id: 'key_high_fis', label: '高 F♯', x: 196, y: 370, w: 52, h: 20, shape: 'key' },
+  { id: 'key_rh_eb', label: '低 E♭', x: 96, y: 510, w: 50, h: 24, shape: 'key' },
+  { id: 'key_rh_c', label: '低 C', x: 154, y: 510, w: 50, h: 24, shape: 'key' },
+];
+
+const SCHEMATIC_SECTIONS: { label: string; y: number }[] = [
+  { label: '拇指 / 掌键', y: 0 },
+  { label: '左手', y: 108 },
+  { label: '右手', y: 318 },
+];
+
+// 「左手1号键 (B音孔 · 左手食指)」→ 名称「左手1号键」，说明取括号内最后一段「左手食指」
+function splitKeyLabel(label: string): { name: string; detail: string } {
+  const m = label.match(/^(.*?)\s*\((.*)\)$/);
+  if (!m) return { name: label, detail: '' };
+  const parts = m[2].split('·').map((t) => t.trim());
+  return { name: m[1], detail: parts[parts.length - 1] };
+}
 
 interface SaxophoneDiagramProps {
   activeKeys: string[];
@@ -34,7 +76,7 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   onKeyClick,
 }) => {
   // View mode: 'split' (实物与图例双屏对照), 'diagram' (高精交互指法图谱), 'photo' (真实实物写真)
-  const [viewMode, setViewMode] = useState<'split' | 'diagram' | 'photo'>('split');
+  const [viewMode, setViewMode] = useState<'split' | 'diagram' | 'photo'>('diagram');
   const [showAnnotations, setShowAnnotations] = useState<boolean>(true);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
@@ -116,274 +158,73 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(0.85, +(prev - 0.15).toFixed(2)));
   const handleResetZoom = () => setZoomLevel(1.0);
 
-  const rightHandKeys = [
-    'key_rh1',
-    'key_rh2',
-    'key_rh3',
-    'key_side_c',
-    'key_side_bb',
-    'key_high_fis',
-    'key_rh_eb',
-    'key_rh_c',
-  ];
-
-  const leftHandKeys = [
-    'key_lh1',
-    'key_lh2',
-    'key_lh3',
-    'key_lh_gis',
-    'key_lh_cis',
-    'key_lh_low_b',
-    'key_lh_low_bb',
-  ];
-
-  const topAuxKeys = [
-    'key_octave',
-    'key_front_f',
-    'key_palm_d',
-    'key_palm_eb',
-    'key_palm_f',
-  ];
-
   return (
-    <div className="flex flex-col items-center justify-center select-none w-full">
-      {/* ===================== Top Controls & View Switcher ===================== */}
-      <div className="flex flex-wrap items-center justify-between w-full px-1 mb-3 gap-2.5">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 font-bold text-sm sm:text-base text-primary">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
-            {saxType === 'alto' ? '中音萨克斯 (Eb Alto · 降E调)' : '高音萨克斯 (Bb Soprano · 降B调)'}
-          </span>
-          <span className="text-[11px] text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-md font-medium hidden sm:inline-block">
-            {saxType === 'alto' ? '实音低大六度 (移调 -9 半音)' : '实音低大二度 (移调 -2 半音)'}
-          </span>
+    <div className="flex w-full flex-col items-center justify-center gap-3 select-none">
+      {/* ===================== Header: Title + View Switcher (示意图 / 实物图 / 双屏) ===================== */}
+      <div className="flex w-full flex-wrap items-center justify-between gap-2.5">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold tracking-tight">指法图示</h2>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
+            {saxType === 'alto' ? 'E♭ 中音萨克斯 · 实音低大六度' : 'B♭ 高音萨克斯 · 实音低大二度'} · 点击按键试听
+          </p>
         </div>
 
-        {/* View Mode Switcher */}
-        <div className="flex items-center gap-1 bg-secondary p-1 rounded-lg border border-border">
-          <button
-            onClick={() => setViewMode('split')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              viewMode === 'split'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>双屏对照</span>
-          </button>
-          <button
-            onClick={() => setViewMode('photo')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              viewMode === 'photo'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Camera className="w-3.5 h-3.5" />
-            <span>真实写真</span>
-          </button>
-          <button
-            onClick={() => setViewMode('diagram')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-              viewMode === 'diagram'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>高精指法图</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Sub-bar: Zoom Controls + Register Switcher + Sound Engine Modes */}
-      <div className="w-full flex flex-wrap items-center justify-between gap-2.5 px-1 mb-3">
-        {/* Zoom controls */}
-        <div className="flex items-center gap-1 bg-secondary px-2.5 py-1 rounded-md border border-border text-xs">
-          <span className="text-[11px] text-muted-foreground mr-1">缩放:</span>
-          <button
-            onClick={handleZoomOut}
-            className="p-1 rounded hover:bg-secondary/85 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="缩小"
-          >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </button>
-          <span className="text-[11px] font-mono text-primary min-w-[36px] text-center font-semibold">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          <button
-            onClick={handleZoomIn}
-            className="p-1 rounded hover:bg-secondary/85 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="放大"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={handleResetZoom}
-            className="p-1 ml-1 rounded hover:bg-secondary/85 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-            title="还原原始比例"
-          >
-            <RotateCcw className="w-3 h-3" />
-          </button>
-        </div>
-
-        {/* 音区快捷切换 */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground hidden sm:inline-block">试听音区:</span>
-          <div className="flex items-center gap-1 bg-secondary p-0.5 rounded-md border border-border text-[11px]">
-            <button
-              onClick={() => setRegister('low')}
-              className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
-                register === 'low'
-                  ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              低/中八度
-            </button>
-            <button
-              onClick={() => setRegister('high')}
-              className={`px-2.5 py-1 rounded flex items-center gap-1 transition-colors cursor-pointer ${
-                register === 'high'
-                  ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Zap className="w-3 h-3 fill-current" />
-              <span>高八度 (+8ve)</span>
-            </button>
-            <button
-              onClick={() => setRegister('altissimo')}
-              className={`px-2.5 py-1 rounded flex items-center gap-1 transition-colors cursor-pointer ${
-                register === 'altissimo'
-                  ? 'bg-destructive text-destructive-foreground font-semibold shadow-sm animate-pulse'
-                  : 'text-muted-foreground hover:text-destructive'
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5 text-amber-400 fill-current" />
-              <span>超吹 (Altissimo)</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Sound Feedback mode & Mute */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-secondary p-0.5 rounded-md border border-border text-[11px]">
-            <button
-              onClick={() => setSoundMode('both')}
-              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
-                soundMode === 'both' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              键音+乐音
-            </button>
-            <button
-              onClick={() => setSoundMode('tone')}
-              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
-                soundMode === 'tone' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              仅乐音
-            </button>
-            <button
-              onClick={() => setSoundMode('click')}
-              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
-                soundMode === 'click' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              仅机械声
-            </button>
-          </div>
-
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className={`p-1.5 rounded-md border transition-colors cursor-pointer ${
-              isMuted
-                ? 'bg-destructive/20 text-destructive border-destructive/40'
-                : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-            }`}
-            title="静音开关"
-          >
-            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* ===================== Real-time Sound & Pitch Feedback Banner ===================== */}
-      <div className="w-full mb-3 px-3.5 py-2 rounded-lg bg-secondary/50 border border-border flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2">
-          {lastPlayedKey ? (
-            <div className="flex items-center gap-2 text-primary font-semibold">
-              <span className="px-2 py-0.5 rounded bg-primary/20 border border-primary/40 text-[11px] text-primary">
-                {lastPlayedKey.register === 'altissimo'
-                  ? '🔥 超吹 Altissimo'
-                  : lastPlayedKey.register === 'high'
-                  ? '⚡ 高八度'
-                  : '🎵 标准音区'}
-              </span>
-              <span className="text-foreground font-bold">{lastPlayedKey.label}</span>
-              <span className="text-muted-foreground text-[11px]">
-                记谱音: <b className="text-primary">{lastPlayedKey.writtenNote}</b> ({lastPlayedKey.writtenFreq}Hz)
-              </span>
-              <span className="text-foreground text-[11px] bg-card px-2 py-0.5 rounded border border-border">
-                {saxType === 'alto' ? '中音实音 (Eb)' : '高音实音 (Bb)'}:{' '}
-                <b className="text-emerald-400">{lastPlayedKey.concertNote}</b> ({lastPlayedKey.concertFreq}Hz)
-              </span>
-            </div>
-          ) : (
-            <span className="text-muted-foreground text-[11px] flex items-center gap-1.5">
-              <Info className="w-3.5 h-3.5 text-primary shrink-0" />
-              已精准校对引线起点位置，引线与按钮完美无缝相接，点击任意按钮或音孔即可即时试听
-            </span>
-          )}
-        </div>
-        <div className="text-[11px] text-primary font-semibold hidden md:block">
-          当前乐器: {saxType === 'alto' ? '经典弯管中音 (Eb Alto)' : '通体直管高音 (Bb Soprano)'}
-        </div>
+        <ToggleGroup
+          type="single"
+          variant="pill"
+          size="sm"
+          value={viewMode}
+          onValueChange={(v) => v && setViewMode(v as typeof viewMode)}
+        >
+          <ToggleGroupItem value="diagram" className="h-7 px-3 text-[13px] font-medium">
+            示意图
+          </ToggleGroupItem>
+          <ToggleGroupItem value="photo" className="h-7 px-3 text-[13px] font-medium">
+            实物图
+          </ToggleGroupItem>
+          <ToggleGroupItem value="split" className="h-7 px-3 text-[13px] font-medium">
+            双屏对照
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       {/* ===================== Main Instrument Display Box ===================== */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch justify-center p-3 sm:p-5 rounded-xl bg-card border border-border shadow-sm">
+      <div className="grid w-full grid-cols-1 items-stretch justify-center gap-5 md:grid-cols-12">
         {/* ==================== 1. 真实乐器实拍照 ==================== */}
         {(viewMode === 'split' || viewMode === 'photo') && (
           <div
-            className={`relative flex flex-col justify-between rounded-xl p-4 sm:p-5 bg-card/80 border border-border shadow-sm overflow-hidden ${
+            className={`relative flex flex-col justify-between overflow-hidden rounded-lg border bg-muted/40 p-4 sm:p-5 ${
               viewMode === 'split' ? 'md:col-span-6' : 'md:col-span-12 w-full max-w-3xl mx-auto'
             }`}
           >
             {/* Header */}
-            <div className="w-full flex items-center justify-between mb-3 px-1 border-b border-border pb-2">
-              <span className="text-xs sm:text-sm font-semibold text-primary flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-primary" />
+            <div className="mb-3 flex w-full items-center justify-between border-b pb-2">
+              <span className="flex items-center gap-1.5 text-[13px] font-medium">
+                <Camera className="size-4 text-muted-foreground" />
                 真实乐器实拍照 ({saxType === 'alto' ? '经典弯管中音 Eb Alto' : '通体直管高音 Bb Soprano'})
               </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowAnnotations(!showAnnotations)}
-                  className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 bg-secondary px-2.5 py-1 rounded-md border border-border cursor-pointer shadow-xs"
-                >
-                  <Eye className="w-3 h-3 text-muted-foreground" />
-                  <span>{showAnnotations ? '隐藏标记' : '显示标记'}</span>
-                </button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-[11px]"
+                onClick={() => setShowAnnotations(!showAnnotations)}
+              >
+                <Eye className="size-3" />
+                {showAnnotations ? '隐藏标记' : '显示标记'}
+              </Button>
             </div>
 
             {/* Top anatomical pill tags */}
             {showAnnotations && (
-              <div className="w-full flex items-center justify-between px-1 mb-2">
-                <span className="bg-secondary/90 text-primary border border-primary/30 text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-xs backdrop-blur-sm">
-                  ① 泛音弯颈 / 八度音孔
-                </span>
-                <span className="bg-secondary/90 text-destructive border border-destructive/30 text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-xs backdrop-blur-sm">
-                  🔥 超吹前F键 / 掌键区
-                </span>
+              <div className="mb-2 flex w-full items-center justify-between">
+                <Badge variant="outline" className="rounded-full text-muted-foreground">泛音弯颈 / 八度音孔</Badge>
+                <Badge variant="outline" className="rounded-full text-muted-foreground">超吹前 F 键 / 掌键区</Badge>
               </div>
             )}
 
             {/* Real Instrument Photo Container */}
             <div className="relative group flex items-center justify-center w-full min-h-[540px] sm:min-h-[640px] py-2 overflow-hidden">
-              <div className="absolute inset-0 bg-radial from-primary/10 via-transparent to-transparent pointer-events-none blur-3xl" />
+              <div className="absolute inset-0 bg-radial from-brand/10 via-transparent to-transparent pointer-events-none blur-3xl" />
 
               <div
                 className="relative transition-transform duration-200 inline-block mx-auto select-none"
@@ -641,98 +482,204 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
           </div>
         )}
 
-        {/* ==================== 2. 高精交互指法图谱面板 ==================== */}
+        {/* ==================== 2. 指法示意图（设计稿布局） ==================== */}
         {(viewMode === 'split' || viewMode === 'diagram') && (
           <div
-            className={`flex flex-col justify-between rounded-xl p-4 sm:p-5 bg-card/80 border border-border shadow-sm ${
-              viewMode === 'split' ? 'md:col-span-6' : 'md:col-span-12 w-full max-w-3xl mx-auto'
-            }`}
+            className={cn(
+              'flex flex-wrap gap-6',
+              viewMode === 'split' ? 'md:col-span-6' : 'md:col-span-12'
+            )}
           >
-            <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
-              <span className="text-xs sm:text-sm font-semibold text-primary flex items-center gap-1.5">
-                <Sliders className="w-4 h-4 text-primary" />
-                高精交互指法图谱（点击任意按键即时试听与切换）
-              </span>
-              <span className="text-[11px] text-muted-foreground bg-secondary px-2.5 py-1 rounded-md border border-border">
-                {activeKeys.length > 0 ? `当前激活 ${activeKeys.length} 个按键` : '全开音孔'}
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              {/* Top Aux Keys */}
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground mb-2">顶级/侧面辅助键群 (Auxiliary Keys)</div>
-                <div className="flex flex-wrap gap-2">
-                  {topAuxKeys.map((keyId) => {
-                    const active = isKeyActive(keyId);
-                    const info = KEY_PITCH_MAP[keyId];
-                    return (
-                      <button
-                        key={keyId}
-                        onClick={() => handleKeyInteraction(keyId)}
-                        className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
-                          active
-                            ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-105'
-                            : 'bg-secondary text-secondary-foreground border-border hover:bg-secondary/80'
-                        }`}
-                      >
-                        {info?.label || keyId}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Left Hand Keys */}
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground mb-2">左手主键群 (Left Hand - Upper Stack)</div>
-                <div className="flex flex-wrap gap-2">
-                  {leftHandKeys.map((keyId) => {
-                    const active = isKeyActive(keyId);
-                    const info = KEY_PITCH_MAP[keyId];
-                    return (
-                      <button
-                        key={keyId}
-                        onClick={() => handleKeyInteraction(keyId)}
-                        className={`px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
-                          active
-                            ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-105'
-                            : 'bg-secondary text-secondary-foreground border-border hover:bg-secondary/80'
-                        }`}
-                      >
-                        {info?.label || keyId}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Right Hand Keys */}
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground mb-2">右手主键与侧键群 (Right Hand & Side Keys)</div>
-                <div className="flex flex-wrap gap-2">
-                  {rightHandKeys.map((keyId) => {
-                    const active = isKeyActive(keyId);
-                    const info = KEY_PITCH_MAP[keyId];
-                    return (
-                      <button
-                        key={keyId}
-                        onClick={() => handleKeyInteraction(keyId)}
-                        className={`px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
-                          active
-                            ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-105'
-                            : 'bg-secondary text-secondary-foreground border-border hover:bg-secondary/80'
-                        }`}
-                      >
-                        {info?.label || keyId}
-                      </button>
-                    );
-                  })}
-                </div>
+            <div className="mx-auto shrink-0 rounded-lg border bg-muted/40 px-3 py-4 sm:px-5">
+              <div className="relative h-[548px] w-[300px]">
+                <div className="absolute top-24 left-[149px] h-96 w-0.5 bg-border" />
+                <div className="absolute top-[300px] left-10 w-[220px] border-t border-dashed border-muted-foreground/30" />
+                {SCHEMATIC_SECTIONS.map((sec) => (
+                  <span
+                    key={sec.label}
+                    className="absolute left-0 text-[11px] font-medium text-muted-foreground"
+                    style={{ top: sec.y }}
+                  >
+                    {sec.label}
+                  </span>
+                ))}
+                {SCHEMATIC_KEYS.map((k) => {
+                  const active = isKeyActive(k.id);
+                  return (
+                    <button
+                      key={k.id}
+                      type="button"
+                      aria-label={`${KEY_PITCH_MAP[k.id]?.label ?? k.label}，${active ? '按下' : '开放'}`}
+                      onClick={() => handleKeyInteraction(k.id)}
+                      className={cn(
+                        'absolute flex cursor-pointer items-center justify-center p-0 transition-[background-color,border-color,transform] outline-none hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                        k.shape === 'hole' ? 'rounded-full text-base' : k.shape === 'pill' ? 'rounded-full text-[10px]' : 'rounded-md text-[10px]',
+                        k.id === 'key_octave' && 'font-mono',
+                        active
+                          ? 'border-2 border-brand-strong bg-brand font-bold text-brand-foreground'
+                          : cn('border-[1.5px] border-muted-foreground/30 bg-card text-muted-foreground', k.shape === 'hole' ? 'font-semibold' : 'font-medium')
+                      )}
+                      style={{ left: k.x, top: k.y, width: k.w, height: k.h }}
+                    >
+                      {k.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
+            {viewMode === 'diagram' && (
+              <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-4">
+                <div>
+                  <div className="mb-2 text-[13px] font-medium">按下的按键</div>
+                  {activeKeys.length === 0 ? (
+                    <div className="rounded-lg border px-3 py-2.5 text-[13px] text-muted-foreground">
+                      全开音孔（不按任何按键）
+                    </div>
+                  ) : (
+                    <ul className="divide-y overflow-hidden rounded-lg border">
+                      {activeKeys.map((keyId) => {
+                        const info = KEY_PITCH_MAP[keyId];
+                        const { name, detail } = splitKeyLabel(info?.label ?? keyId);
+                        return (
+                          <li key={keyId} className="flex items-center gap-2.5 px-3 py-2.5">
+                            <span className="size-2.5 shrink-0 rounded-full bg-brand" />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[13px] font-medium">{name}</div>
+                              {detail && <div className="text-xs text-muted-foreground">{detail}</div>}
+                            </div>
+                            <span className="font-mono text-[11px] text-muted-foreground">{info?.shortName}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="mt-auto flex flex-col gap-2 border-t pt-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="size-3 shrink-0 rounded-full border-[1.5px] border-brand-strong bg-brand" />
+                    闭合：手指按严封孔
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="size-3 shrink-0 rounded-full border-[1.5px] border-muted-foreground/30 bg-card" />
+                    开放：手指自然贴附微悬
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
+      </div>
+
+      {/* Toolbar: Zoom + Register Switcher + Sound Engine Modes（放在图示下方，保证首屏先看到按键高亮） */}
+      <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 border-t pt-3">
+        <div className="flex items-center gap-0.5 rounded-lg bg-muted p-[3px]">
+          <span className="px-1.5 text-[11px] text-muted-foreground">缩放</span>
+          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleZoomOut} title="缩小">
+            <ZoomOut className="size-3.5" />
+          </Button>
+          <span className="min-w-[40px] text-center font-mono text-[11px] font-semibold">
+            {Math.round(zoomLevel * 100)}%
+          </span>
+          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleZoomIn} title="放大">
+            <ZoomIn className="size-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon-sm" className="size-7" onClick={handleResetZoom} title="还原原始比例">
+            <RotateCcw className="size-3" />
+          </Button>
+        </div>
+
+        {/* 音区快捷切换 */}
+        <div className="flex items-center gap-1.5">
+          <span className="hidden text-[11px] text-muted-foreground sm:inline-block">试听音区</span>
+          <ToggleGroup
+            type="single"
+            variant="pill"
+            size="sm"
+            value={register}
+            onValueChange={(v) => v && setRegister(v as SaxRegister)}
+          >
+            <ToggleGroupItem value="low" className="h-7 px-2.5 text-[11px]">
+              低/中八度
+            </ToggleGroupItem>
+            <ToggleGroupItem value="high" className="h-7 px-2.5 text-[11px]">
+              <Zap className="size-3" /> 高八度 (+8ve)
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="altissimo"
+              className="h-7 px-2.5 text-[11px] data-[state=on]:bg-destructive data-[state=on]:text-white"
+            >
+              <Flame className="size-3.5" /> 超吹 (Altissimo)
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+
+        {/* Sound Feedback mode & Mute */}
+        <div className="flex items-center gap-2">
+          <ToggleGroup
+            type="single"
+            variant="pill"
+            size="sm"
+            value={soundMode}
+            onValueChange={(v) => v && setSoundMode(v as typeof soundMode)}
+          >
+            <ToggleGroupItem value="both" className="h-7 px-2 text-[11px]">
+              键音+乐音
+            </ToggleGroupItem>
+            <ToggleGroupItem value="tone" className="h-7 px-2 text-[11px]">
+              仅乐音
+            </ToggleGroupItem>
+            <ToggleGroupItem value="click" className="h-7 px-2 text-[11px]">
+              仅机械声
+            </ToggleGroupItem>
+          </ToggleGroup>
+
+          <Toggle
+            variant="outline"
+            size="sm"
+            pressed={isMuted}
+            onPressedChange={setIsMuted}
+            title="静音开关"
+            aria-label="静音开关"
+            className="text-success data-[state=on]:border-destructive/40 data-[state=on]:bg-destructive/15 data-[state=on]:text-destructive"
+          >
+            {isMuted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
+          </Toggle>
+        </div>
+      </div>
+
+
+
+      {/* ===================== Real-time Sound & Pitch Feedback Banner ===================== */}
+      <div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2 text-xs">
+        {lastPlayedKey ? (
+          <div className="flex flex-wrap items-center gap-2 font-medium">
+            <Badge variant={lastPlayedKey.register === 'altissimo' ? 'destructive' : 'outline'} className="bg-card">
+              {lastPlayedKey.register === 'altissimo'
+                ? '超吹 Altissimo'
+                : lastPlayedKey.register === 'high'
+                ? '高八度'
+                : '标准音区'}
+            </Badge>
+            <span>{lastPlayedKey.label}</span>
+            <span className="text-[11px] text-muted-foreground">
+              记谱音 <b className="font-mono text-foreground">{lastPlayedKey.writtenNote}</b> ({lastPlayedKey.writtenFreq}Hz)
+            </span>
+            <Badge variant="outline" className="bg-card">
+              {saxType === 'alto' ? '中音实音 (Eb)' : '高音实音 (Bb)'}:
+              <b className="text-success">{lastPlayedKey.concertNote}</b> ({lastPlayedKey.concertFreq}Hz)
+            </Badge>
+          </div>
+        ) : (
+          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Info className="size-3.5 shrink-0" />
+            点击任意按钮或音孔即可即时试听
+          </span>
+        )}
+        <span className="hidden text-[11px] text-muted-foreground md:block">
+          当前乐器: {saxType === 'alto' ? '经典弯管中音 (Eb Alto)' : '通体直管高音 (Bb Soprano)'}
+        </span>
       </div>
     </div>
   );
