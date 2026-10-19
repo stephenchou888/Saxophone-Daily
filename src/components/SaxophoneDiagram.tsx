@@ -483,7 +483,8 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
             )}
           >
             <div className="mx-auto shrink-0 rounded-lg border bg-muted/40 px-3 py-4 sm:px-5">
-              <div className="relative h-[548px] w-[300px]">
+              {/* 示意图画布固定 300px 宽，320px 宽的小屏手机上整体缩小以免横向溢出 */}
+              <div className="relative h-[548px] w-[300px] max-[360px]:[zoom:0.8]">
                 <div className="absolute top-24 left-[149px] h-96 w-0.5 bg-border" />
                 <div className="absolute top-[300px] left-10 w-[220px] border-t border-dashed border-muted-foreground/30" />
                 {SCHEMATIC_SECTIONS.map((sec) => (
@@ -596,13 +597,13 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
               低/中八度
             </ToggleGroupItem>
             <ToggleGroupItem value="high" className="h-7 px-2.5 text-[11px]">
-              <Zap className="size-3" /> 高八度 (+8ve)
+              <Zap className="size-3" /> 高八度<span className="max-sm:hidden"> (+8ve)</span>
             </ToggleGroupItem>
             <ToggleGroupItem
               value="altissimo"
               className="h-7 px-2.5 text-[11px] data-[state=on]:bg-destructive data-[state=on]:text-white"
             >
-              <Flame className="size-3.5" /> 超吹 (Altissimo)
+              <Flame className="size-3.5" /> 超吹<span className="max-sm:hidden"> (Altissimo)</span>
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
