@@ -64,12 +64,15 @@ function splitKeyLabel(label: string): { name: string; detail: string } {
 interface SaxophoneDiagramProps {
   activeKeys: string[];
   saxType: SaxophoneType;
+  /** 当前音的指法提示（#18），示意图视图中显示 */
+  tip?: string;
   onKeyClick?: (keyId: string) => void;
 }
 
 export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   activeKeys,
   saxType,
+  tip,
   onKeyClick,
 }) => {
   // View mode: 'split' (实物与图例双屏对照), 'diagram' (高精交互指法图谱), 'photo' (真实实物写真)
@@ -548,6 +551,13 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
                     </ul>
                   )}
                 </div>
+
+                {tip && (
+                  <div className="flex gap-2.5 rounded-lg bg-muted p-3">
+                    <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <p className="text-[13px] text-foreground/80">{tip}</p>
+                  </div>
+                )}
 
                 <div className="mt-auto flex flex-col gap-2 border-t pt-3 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">

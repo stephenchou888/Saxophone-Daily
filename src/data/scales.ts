@@ -3,8 +3,8 @@ import { NoteFingering, ScaleDefinition } from '../types/music';
 export const FINGERINGS: Record<string, NoteFingering> = {
   // ===================== 低音区与中音区 (Low & Middle Register) =====================
   'C4':  { desc: '低音 1 (Do)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_c'], freq: 261.63 },
-  'C#4': { desc: '低音 #1 (Do#)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_lh_cis', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_c'], freq: 277.18 },
-  'Db4': { desc: '低音 b2 (Reb)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_lh_gis', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_c'], freq: 277.18 },
+  'C#4': { desc: '低音 #1 (Do#)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_lh_cis', 'key_rh1', 'key_rh2', 'key_rh3'], freq: 277.18 },
+  'Db4': { desc: '低音 b2 (Reb)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_lh_cis', 'key_rh1', 'key_rh2', 'key_rh3'], freq: 277.18 },
   'D4':  { desc: '低音 2 (Re)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3'], freq: 293.66 },
   'D#4': { desc: '低音 #2 (Re#)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_eb'], freq: 311.13 },
   'Eb4': { desc: '低音 b3 (Mib)', keys: ['key_lh1', 'key_lh2', 'key_lh3', 'key_rh1', 'key_rh2', 'key_rh3', 'key_rh_eb'], freq: 311.13 },
