@@ -58,6 +58,10 @@ export default function App() {
   const [isMetronomeOn, setIsMetronomeOn] = useState<boolean>(false);
   const [currentBeat, setCurrentBeat] = useState<number>(-1);
   const beatRef = useRef<number>(-1);
+  // 节拍器启动时重新起拍，避免第一拍与随后一拍间隔不均
+  const [clockPhase, setClockPhase] = useState(0);
+  // 节拍器已在走时启动演示：当前音在下一拍响起，而不是立刻响（保持与节拍对齐）
+  const demoPendingStartRef = useRef(false);
   const [todayDateStr, setTodayDateStr] = useState<string>('');
 
   const { playTone, playClick } = useSoundEngine();
@@ -158,14 +162,30 @@ export default function App() {
       setCurrentBeat(beat);
       playClick(beat === 0);
     }
-    if (isAutoPlaying) demoStep();
-  });
+    if (isAutoPlaying) {
+      if (demoPendingStartRef.current) {
+        demoPendingStartRef.current = false;
+        playCurrentNote();
+      } else {
+        demoStep();
+      }
+    }
+  }, clockPhase);
 
   const toggleAutoPlay = () => {
     if (!isAutoPlaying) {
-      // 单次模式下若已在最后一个音，从头开始演示
-      if (!demoLoop && currentNoteIndex >= currentScale.notes.length - 1) goToNote(0);
-      else playCurrentNote();
+      const restartFromFirst = !demoLoop && currentNoteIndex >= currentScale.notes.length - 1;
+      if (isMetronomeOn) {
+        // 跟着节拍器走：在下一拍响起当前音（必要时先回到第一个音，但不立刻发声）
+        if (restartFromFirst) setCurrentNoteIndex(0);
+        demoPendingStartRef.current = true;
+      } else if (restartFromFirst) {
+        goToNote(0);
+      } else {
+        playCurrentNote();
+      }
+    } else {
+      demoPendingStartRef.current = false;
     }
     setIsAutoPlaying(!isAutoPlaying);
   };
@@ -179,6 +199,7 @@ export default function App() {
       beatRef.current = 0;
       setCurrentBeat(0);
       playClick(true);
+      setClockPhase((p) => p + 1);
     }
     setIsMetronomeOn(!isMetronomeOn);
   };
@@ -470,7 +491,7 @@ export default function App() {
         </div>
 
         {/* ===================== Practice Tips ===================== */}
-        <PracticeTipsCard scaleName={currentScale.name} scaleTip={currentScale.tip} />
+        <PracticeTipsCard scaleName={scaleDisplayName(currentScale)} scaleTip={currentScale.tip} />
 
         <footer className="flex flex-wrap justify-between gap-2 border-t py-6 text-xs text-muted-foreground">
           <span>Saxophone Daily · 中音 (E♭) 与高音 (B♭) 萨克斯</span>

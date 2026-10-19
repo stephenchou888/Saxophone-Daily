@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Maximize2, Minimize2, ZoomIn, ZoomOut, Eye, Sparkles, Hash } from 'lucide-react';
 import { ScaleDefinition } from '../types/music';
+import { scaleDisplayName } from '@/lib/dailyScale';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -95,7 +96,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         }
       });
 
-      const cleanTitle = scale.name.split(' (')[0];
+      const cleanTitle = scaleDisplayName(scale);
       const header = `X:1\nT:${cleanTitle} 视奏练习\nM:4/4\nL:1/4\nK:${keySig}`;
 
       if (layoutMode === 'single-line') {

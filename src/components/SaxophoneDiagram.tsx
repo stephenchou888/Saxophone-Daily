@@ -101,6 +101,7 @@ const SopranoPhotoAnnotated: React.FC<{
   const labelW = 1150;
   const labelH = 230;
   const labelGap = 50;
+  const pad = 90; // 照片是白底 JPG：四周加圆角白色衬底，深色模式下也像一张“相纸”
   // 每侧按纵向位置排开标签，相邻按键太近时把后一个标签往下推，避免重叠
   const labelCenter = new Map<string, number>();
   (['left', 'right'] as const).forEach((side) => {
@@ -115,13 +116,14 @@ const SopranoPhotoAnnotated: React.FC<{
   });
   return (
     <svg
-      viewBox={`${-gutter} 0 ${width + gutter * 2} ${height}`}
+      viewBox={`${-gutter} ${-pad} ${width + gutter * 2} ${height + pad * 2}`}
       width={421}
       height={600}
       role="img"
       aria-label="高音萨克斯实拍照（含按键标注）"
       className="mx-auto block h-auto w-full max-w-[421px] drop-shadow-xl"
     >
+      <rect x={-pad} y={-pad} width={width + pad * 2} height={height + pad * 2} rx={120} fill="#ffffff" />
       <image href={src} x={0} y={0} width={width} height={height} />
       {SOPRANO_PHOTO_KEYS.map((k) => {
         const active = isKeyActive(k.id);
@@ -137,7 +139,12 @@ const SopranoPhotoAnnotated: React.FC<{
             tabIndex={0}
             aria-label={`${KEY_PITCH_MAP[k.id]?.label ?? k.label}，${active ? '按下' : '开放'}`}
             onClick={() => onKey(k.id)}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onKey(k.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault(); // 空格默认会滚动页面
+                onKey(k.id);
+              }
+            }}
             className="group cursor-pointer outline-none"
           >
             <path
@@ -346,7 +353,7 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
         {/* ==================== 1. 真实乐器实拍照 ==================== */}
         {(viewMode === 'split' || viewMode === 'photo') && (
           <div
-            className={`relative flex flex-col justify-between overflow-hidden rounded-lg border bg-muted/40 p-4 sm:p-5 ${
+            className={`relative flex flex-col overflow-hidden rounded-lg border bg-muted/40 p-4 sm:p-5 ${
               viewMode === 'split' ? 'md:col-span-6' : 'md:col-span-12 w-full max-w-3xl mx-auto'
             }`}
           >
@@ -377,7 +384,7 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
 
             {/* Real Instrument Photo Container */}
             {/* 容器高度跟随图片（#3）；缩放用 CSS zoom 参与布局，放大后可滚动查看而不是被裁切 */}
-            <div className="relative w-full overflow-auto py-2">
+            <div className="relative flex w-full flex-1 flex-col justify-center overflow-auto py-2">
               <div className="pointer-events-none absolute inset-0 bg-radial from-brand/10 via-transparent to-transparent blur-3xl" />
 
               <div className="relative mx-auto w-fit select-none" style={{ zoom: zoomLevel }}>

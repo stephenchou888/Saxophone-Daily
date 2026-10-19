@@ -34,7 +34,7 @@ export const PracticeTipsCard: React.FC<PracticeTipsCardProps> = ({ scaleName, s
           <div className="min-w-0">
             <h2 className="text-base font-semibold tracking-tight">今日练琴重点</h2>
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{scaleName.split(' (')[0]}：</span>
+              <span className="font-medium text-foreground">{scaleName}：</span>
               {scaleTip}
             </p>
           </div>
