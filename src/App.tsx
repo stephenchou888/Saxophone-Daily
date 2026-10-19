@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SaxophoneType, ScaleDefinition } from './types/music';
 import { SCALES, FINGERINGS, KEY_NAME_MAP } from './data/scales';
+import { NOTE_TIPS } from './data/noteTips';
 import { useSoundEngine, useAudioMuted, getSaxSoundingPitch } from './hooks/useSoundEngine';
 import { SaxophoneDiagram } from './components/SaxophoneDiagram';
 import { SheetMusicView } from './components/SheetMusicView';
@@ -429,7 +430,7 @@ export default function App() {
           {/* ===================== Fingering Diagram Card ===================== */}
           <Card className="py-4 sm:py-5 lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1">
             <CardContent className="flex flex-col items-center justify-center px-3 sm:px-6">
-              <SaxophoneDiagram activeKeys={currentFingering.keys} saxType={saxType} />
+              <SaxophoneDiagram activeKeys={currentFingering.keys} saxType={saxType} tip={NOTE_TIPS[currentNoteName]} />
             </CardContent>
           </Card>
 
