@@ -16,7 +16,6 @@ import {
   Sparkles,
   Calendar,
   Music2,
-  CheckCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 // 下拉菜单中的音阶分组
@@ -42,6 +42,16 @@ const SCALE_GROUPS: { category: NonNullable<ScaleDefinition['category']>; label:
 ];
 
 const scaleShortName = (s: ScaleDefinition) => s.name.split(' (')[0];
+
+const CATEGORY_LABEL: Record<NonNullable<ScaleDefinition['category']>, string> = {
+  special: '特色音阶',
+  major: '自然大调',
+  minor: '自然小调',
+  harmonic_minor: '和声小调',
+};
+
+// 显示用音名：F#4 → F♯4，Bb4 → B♭4
+const prettyNote = (n: string) => n.replace('#', '♯').replace(/^([A-G])b/, '$1♭');
 
 export default function App() {
   const [saxType, setSaxType] = useState<SaxophoneType>('alto');
@@ -163,222 +173,277 @@ export default function App() {
     }
   };
 
-  // Human readable active keys string
-  const activeKeysSummary =
-    currentFingering.keys.length === 0
-      ? '全开音孔（不按任何按键）'
-      : currentFingering.keys.map((k) => KEY_NAME_MAP[k] || k).join(' + ');
+  const transposeLabel = saxType === 'alto' ? '低大六度' : '低大二度';
+  const progressPct = ((currentNoteIndex + 1) / currentScale.notes.length) * 100;
+
+  const demoLabel = isAutoPlaying ? '停止演示' : '慢速指法演示';
+  const DemoIcon = isAutoPlaying ? Square : Play;
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-3 sm:py-5 px-3 sm:px-6 touch-manipulation pb-safe">
-      <div className="max-w-[1560px] mx-auto grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12">
-        {/* ===================== Header: Title + Instrument + Today's Scale ===================== */}
-        <Card className="gap-0 py-3 sm:py-4 lg:col-span-12">
-          <CardContent className="flex flex-col gap-3 px-4 sm:px-5 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0 space-y-1">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h1 className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-xl font-black tracking-tight text-transparent sm:text-2xl">
-                  🎷 Saxophone Daily
-                </h1>
-                <span className="text-muted-foreground">·</span>
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <Music2 className="size-4 shrink-0 text-primary" />
-                  <h2 className="truncate text-base font-bold sm:text-lg">今日主修：{scaleShortName(currentScale)}</h2>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium">
-                <span className="inline-flex items-center gap-1 text-primary">
-                  <Calendar className="size-3.5" />
-                  {todayDateStr}
-                </span>
-                <span className="text-muted-foreground">·</span>
-                <span className="text-muted-foreground">{currentScale.keySig}</span>
-                <span className="hidden text-muted-foreground sm:inline">·</span>
-                <span className="hidden text-muted-foreground sm:inline">
-                  本位移调记谱（视谱即吹），试听按{' '}
-                  <span className="font-semibold text-primary">
-                    {saxType === 'alto' ? 'Eb 中音（发音低大六度）' : 'Bb 高音（发音低大二度）'}
-                  </span>{' '}
-                  真实发音
-                </span>
-              </div>
+    <div className="min-h-screen bg-background pb-24 text-foreground touch-manipulation lg:pb-0">
+      {/* ===================== App Bar: Logo + Instrument ===================== */}
+      <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
+        <div className="mx-auto flex min-h-14 max-w-[1280px] flex-wrap items-center justify-between gap-3 px-4 sm:px-8">
+          <div className="flex items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-sm">🎷</span>
+            <span className="text-sm font-bold sm:text-base">Saxophone Daily</span>
+            <Badge variant="secondary" className="hidden text-muted-foreground sm:inline-flex">
+              基本功研习
+            </Badge>
+          </div>
+
+          <ToggleGroup
+            type="single"
+            variant="pill"
+            size="sm"
+            value={saxType}
+            onValueChange={(v) => v && setSaxType(v as SaxophoneType)}
+            aria-label="选择乐器"
+          >
+            <ToggleGroupItem value="alto" className="px-3 text-xs font-semibold">
+              <span className="max-sm:hidden">中音</span> Alto · E♭
+            </ToggleGroupItem>
+            <ToggleGroupItem value="soprano" className="px-3 text-xs font-semibold">
+              <span className="max-sm:hidden">高音</span> Soprano · B♭
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      </header>
+
+      <main className="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pt-4 sm:px-8">
+        {/* ===================== Today's Scale ===================== */}
+        <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Calendar className="size-3.5 text-primary" />
+              {todayDateStr} · 今日主修
             </div>
+            <h1 className="text-2xl font-bold tracking-tight">{scaleShortName(currentScale)}</h1>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {currentScale.category && <Badge variant="soft">{CATEGORY_LABEL[currentScale.category]}</Badge>}
+              <Badge variant="outline" className="text-muted-foreground">
+                {currentScale.keySig}
+              </Badge>
+            </div>
+          </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center xl:shrink-0">
-              <ToggleGroup
-                type="single"
-                variant="pill"
-                size="sm"
-                value={saxType}
-                onValueChange={(v) => v && setSaxType(v as SaxophoneType)}
-                className="grid w-full grid-cols-2 sm:w-auto"
-              >
-                <ToggleGroupItem value="alto" className="px-3 text-xs font-semibold">
-                  中音 Eb Alto
-                  {saxType === 'alto' && <CheckCircle />}
-                </ToggleGroupItem>
-                <ToggleGroupItem value="soprano" className="px-3 text-xs font-semibold">
-                  高音 Bb Soprano
-                  {saxType === 'soprano' && <CheckCircle />}
-                </ToggleGroupItem>
-              </ToggleGroup>
-
-              <div className="flex w-full items-center gap-2 sm:w-72">
-                <span className="shrink-0 text-xs font-medium text-muted-foreground">切换调性:</span>
-                <Select value={currentScale.id} onValueChange={handleScaleChange}>
-                  <SelectTrigger size="sm" className="w-full min-w-0 font-semibold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent align="end" className="max-h-[380px]">
-                    {SCALE_GROUPS.map((group, gi) => (
-                      <SelectGroup key={group.category}>
-                        {gi > 0 && <SelectSeparator />}
-                        <SelectLabel className={`flex items-center gap-1.5 font-bold ${group.className}`}>
-                          {group.category === 'special' ? <Sparkles className="size-3.5" /> : <Music2 className="size-3.5" />}
-                          {group.label}
-                        </SelectLabel>
-                        {SCALES.filter((s) => s.category === group.category).map((s) => (
-                          <SelectItem key={s.id} value={s.id} className="text-xs">
-                            {scaleShortName(s)} <span className="opacity-70">({s.accidentals})</span>
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
+          <div className="flex w-full items-center gap-2 sm:w-72 sm:shrink-0">
+            <span className="shrink-0 text-xs font-medium text-muted-foreground">切换调性</span>
+            <Select value={currentScale.id} onValueChange={handleScaleChange}>
+              <SelectTrigger className="w-full min-w-0 font-semibold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end" className="max-h-[380px]">
+                {SCALE_GROUPS.map((group, gi) => (
+                  <SelectGroup key={group.category}>
+                    {gi > 0 && <SelectSeparator />}
+                    <SelectLabel className={`flex items-center gap-1.5 font-bold ${group.className}`}>
+                      {group.category === 'special' ? <Sparkles className="size-3.5" /> : <Music2 className="size-3.5" />}
+                      {group.label}
+                    </SelectLabel>
+                    {SCALES.filter((s) => s.category === group.category).map((s) => (
+                      <SelectItem key={s.id} value={s.id} className="text-xs">
+                        {scaleShortName(s)} <span className="opacity-70">({s.accidentals})</span>
+                      </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </section>
+
+        {/* ===================== Sheet Music + Note Strip ===================== */}
+        <Card className="gap-3 py-3 sm:py-4">
+          <CardContent className="space-y-3 px-3 sm:px-5">
+            <div className="flex items-center justify-between gap-3 sm:items-start">
+              <div className="flex min-w-0 items-baseline gap-2 sm:block">
+                <h2 className="text-base font-semibold">五线谱视奏</h2>
+                <p className="text-xs text-muted-foreground">
+                  <span className="sm:hidden">左右滑动查看</span>
+                  <span className="max-sm:hidden">
+                    按 {saxType === 'alto' ? 'E♭ 中音' : 'B♭ 高音'}萨克斯移调记谱，视谱即吹 · 点击音符跳转
+                  </span>
+                </p>
+              </div>
+              <div className="shrink-0 text-xs text-muted-foreground sm:text-sm">
+                第 <span className="font-mono font-semibold text-foreground">{currentNoteIndex + 1} / {currentScale.notes.length}</span> 音
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/*
-          练习主区：手机端把五线谱 + 当前音符控制条整体吸顶，萨克斯图示在下方滚动；
-          桌面端（lg）该容器 display: contents，子元素直接参与外层 12 列网格。
-        */}
-        <div className="sticky top-0 z-30 -mx-3 space-y-2 bg-background/95 px-3 pt-1 pb-2 backdrop-blur sm:-mx-6 sm:px-6 lg:contents">
-          {/* ===================== Sheet Music ===================== */}
-          <div className="lg:col-span-12">
             <SheetMusicView
               scale={currentScale}
               abcNotation={currentScale.abc}
               currentNoteIndex={currentNoteIndex}
               onNoteClick={handleSelectNoteIndex}
             />
-          </div>
 
-          {/* ===================== Current Note & Step Controls ===================== */}
-          <Card className="gap-0 py-3 sm:py-4 lg:sticky lg:top-4 lg:col-span-4 lg:self-start">
-            <CardContent className="space-y-2 px-3 sm:space-y-3 sm:px-4">
-              <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/40 px-3 py-2 sm:px-4 sm:py-3">
-                <div className="flex min-w-0 items-baseline gap-2 lg:block">
-                  <span className="hidden text-xs font-semibold tracking-wider text-muted-foreground uppercase lg:block">
-                    当前音符 · Current Note
-                  </span>
-                  <div className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-3xl font-black tracking-tight text-transparent sm:text-4xl lg:text-5xl">
-                    {currentNoteName}
-                  </div>
-                  <div className="truncate text-sm font-bold sm:text-base lg:mt-0.5 lg:text-lg">{currentFingering.desc}</div>
-                </div>
-
-                <div className="shrink-0 space-y-1 text-right">
-                  <Badge variant="success" className="px-2 py-1 text-[11px] sm:text-xs">
-                    实际发音({saxType === 'alto' ? 'Eb' : 'Bb'}):
-                    <span className="font-bold text-foreground">{soundingNote}</span>
-                    <span className="hidden opacity-80 sm:inline">({soundingFreq} Hz)</span>
-                  </Badge>
-                  <div className="text-xs text-muted-foreground">
-                    第 <strong className="text-primary">{currentNoteIndex + 1}</strong> / {currentScale.notes.length} 音
-                  </div>
-                </div>
-              </div>
-
-              {/* Active Keys Combinations */}
-              <div className="space-y-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 sm:px-4 sm:py-3">
-                <div className="hidden items-center justify-between text-xs font-semibold tracking-wide text-primary uppercase sm:flex">
-                  <span>闭合按键组合说明</span>
-                  <span className="text-[11px] font-normal text-muted-foreground normal-case">点击萨克斯按键也可交互</span>
-                </div>
-                <div data-keys-summary className="text-sm leading-snug font-bold text-primary sm:text-base">
-                  {activeKeysSummary}
-                </div>
-              </div>
-
-              {/* Step Navigation Controls */}
-              <div className="grid grid-cols-4 gap-1.5 sm:gap-2 lg:grid-cols-2">
-                <Button variant="secondary" className="h-10 px-1 text-xs sm:text-sm" onClick={handlePrevNote}>
-                  <SkipBack /> <span className="max-sm:hidden">上一个音</span><span className="sm:hidden">上一个</span>
-                </Button>
-
+            {/* 音名按钮：已练过的灰掉，当前音高亮，点击跳转 */}
+            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+              {currentScale.notes.map((n, idx) => (
                 <Button
-                  variant={isAutoPlaying ? 'destructive' : 'success'}
-                  className="h-10 px-1 text-xs font-bold sm:text-sm"
-                  onClick={toggleAutoPlay}
+                  key={`${n}-${idx}`}
+                  size="sm"
+                  variant={idx === currentNoteIndex ? 'default' : idx < currentNoteIndex ? 'secondary' : 'outline'}
+                  aria-label={`跳转到 ${prettyNote(n)}`}
+                  aria-current={idx === currentNoteIndex ? 'step' : undefined}
+                  className={`min-w-12 shrink-0 font-mono ${idx < currentNoteIndex ? 'text-muted-foreground' : ''}`}
+                  onClick={() => handleSelectNoteIndex(idx)}
                 >
-                  {isAutoPlaying ? (
-                    <>
-                      <Square className="fill-current" /> <span className="max-sm:hidden">停止演示</span><span className="sm:hidden">停止</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="fill-current" /> <span className="max-sm:hidden">慢速指法演示</span><span className="sm:hidden">演示</span>
-                    </>
-                  )}
+                  {prettyNote(n)}
                 </Button>
-
-                <Button variant="secondary" className="h-10 px-1 text-xs sm:text-sm" onClick={handleNextNote}>
-                  <span className="max-sm:hidden">下一个音</span><span className="sm:hidden">下一个</span> <SkipForward />
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="h-10 border-primary/40 bg-primary/15 px-1 text-xs text-primary hover:bg-primary/25 hover:text-primary sm:text-sm dark:border-primary/40 dark:bg-primary/15 dark:hover:bg-primary/25"
-                  onClick={playCurrentNote}
-                >
-                  <Volume2 /> <span className="max-sm:hidden">发音试听</span><span className="sm:hidden">试听</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ===================== Physical Saxophone Diagram Card ===================== */}
-        <Card className="py-4 lg:col-span-8">
-          <CardContent className="flex flex-col items-center justify-center px-3 sm:px-5">
-            <SaxophoneDiagram activeKeys={currentFingering.keys} saxType={saxType} />
-
-            {/* Diagram Legend */}
-            <div className="mt-4 w-full space-y-2 border-t pt-3 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span className="size-3.5 shrink-0 rounded-full bg-primary" />
-                <span>橙金高亮：闭合按键（手指需按严密封孔）</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="size-3.5 shrink-0 rounded-full border bg-muted" />
-                <span>象牙白贝壳：开放按键（手指自然贴附微悬）</span>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* ===================== Practice Aids: Metronome, Streak, Tips ===================== */}
-        <section className="space-y-3 pt-2 lg:col-span-12">
-          <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-muted-foreground">
-            <Sparkles className="size-4 text-primary" /> 练习辅助
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {/*
+          主区：左栏（当前音符卡、节拍器 + 打卡）/ 右栏（指法图示）。
+          DOM 顺序为 当前音符 → 指法图示 → 节拍器/打卡，手机单列时即设计稿顺序；
+          lg 以上通过显式行列定位排成左右两栏，第二行用 1fr 吸收右栏多出的高度。
+        */}
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12 lg:grid-rows-[auto_1fr]">
+          {/* ===================== Current Note Card ===================== */}
+          <Card className="gap-0 py-3 sm:py-4 lg:col-span-5 lg:col-start-1 lg:row-start-1">
+            <CardContent className="space-y-3 px-4 sm:space-y-4 sm:px-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    当前音符<span className="lg:hidden"> · {currentNoteIndex + 1} / {currentScale.notes.length}</span>
+                  </div>
+                  <div className="font-mono text-4xl font-bold tracking-tight text-primary sm:text-5xl">
+                    {prettyNote(currentNoteName)}
+                  </div>
+                  <div className="truncate text-sm font-medium text-muted-foreground">{currentFingering.desc}</div>
+                </div>
+
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <Badge variant="success" className="px-2 py-1">
+                    <span className="size-1.5 rounded-full bg-success" />
+                    实际发音 {soundingNote}
+                  </Badge>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {soundingFreq} Hz · {transposeLabel}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 max-lg:hidden">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>音阶进度</span>
+                  <span className="font-mono">
+                    {currentNoteIndex + 1} / {currentScale.notes.length}
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+                </div>
+              </div>
+              <div className="h-1 overflow-hidden rounded-full bg-muted lg:hidden">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+              </div>
+
+              <Separator className="max-lg:hidden" />
+
+              {/* Active Keys Combinations */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs max-sm:hidden">
+                  <span className="font-semibold">按键组合</span>
+                  <span className="text-muted-foreground">
+                    {currentFingering.keys.length > 0 ? `${currentFingering.keys.length} 个按键闭合` : '全开音孔'}
+                  </span>
+                </div>
+                <div data-keys-summary className="flex flex-wrap gap-1.5">
+                  {currentFingering.keys.length === 0 ? (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      全开音孔（不按任何按键）
+                    </Badge>
+                  ) : (
+                    currentFingering.keys.map((k) => (
+                      <Badge key={k} variant="soft" className="px-2 py-1 text-xs">
+                        <span className="size-1.5 rounded-full bg-primary" />
+                        {KEY_NAME_MAP[k] || k}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Step Navigation Controls（手机端改为底部固定控制栏） */}
+              <div className="flex gap-2 max-lg:hidden">
+                <Button variant="outline" size="icon" aria-label="上一个音" onClick={handlePrevNote}>
+                  <SkipBack />
+                </Button>
+                <Button variant={isAutoPlaying ? 'destructive' : 'default'} className="flex-1 font-semibold" onClick={toggleAutoPlay}>
+                  <DemoIcon className="fill-current" /> {demoLabel}
+                </Button>
+                <Button variant="outline" size="icon" aria-label="下一个音" onClick={handleNextNote}>
+                  <SkipForward />
+                </Button>
+                <Button variant="outline" onClick={playCurrentNote}>
+                  <Volume2 /> 试听
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ===================== Fingering Diagram Card ===================== */}
+          <Card className="py-4 lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1">
+            <CardContent className="flex flex-col items-center justify-center px-3 sm:px-5">
+              <SaxophoneDiagram activeKeys={currentFingering.keys} saxType={saxType} />
+
+              {/* Diagram Legend */}
+              <div className="mt-3 flex w-full flex-wrap gap-x-5 gap-y-1.5 border-t pt-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="size-3 shrink-0 rounded-full bg-primary" />
+                  <span>闭合：手指按严封孔</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="size-3 shrink-0 rounded-full border bg-muted" />
+                  <span>开放：手指自然贴附微悬</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ===================== Metronome & Streak ===================== */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:col-span-5 lg:col-start-1 lg:row-start-2">
             <Metronome onTick={playClick} />
             <StreakCard />
-            <div className="sm:col-span-2">
-              <PracticeTipsCard scaleName={currentScale.name} scaleTip={currentScale.tip} />
-            </div>
           </div>
-        </section>
+        </div>
 
-        {/* Footer */}
-        <footer className="border-t py-6 text-center text-xs text-muted-foreground lg:col-span-12">
-          Saxophone Daily · 专为中音 (Eb) 与高音 (Bb) 萨克斯设计 · PC / 移动端全兼容 · 坚持练习，音色自见
+        {/* ===================== Practice Tips ===================== */}
+        <PracticeTipsCard scaleName={currentScale.name} scaleTip={currentScale.tip} />
+
+        <footer className="flex flex-wrap justify-between gap-2 border-t py-6 text-xs text-muted-foreground">
+          <span>Saxophone Daily · 中音 (E♭) 与高音 (B♭) 萨克斯</span>
+          <span>坚持练习，音色自见</span>
         </footer>
-      </div>
+      </main>
+
+      {/* ===================== Mobile Bottom Control Bar ===================== */}
+      <nav
+        aria-label="演奏控制"
+        className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t bg-background/95 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] backdrop-blur lg:hidden"
+      >
+        <Button variant="outline" size="icon" className="size-11" aria-label="上一个音" onClick={handlePrevNote}>
+          <SkipBack />
+        </Button>
+        <Button
+          variant={isAutoPlaying ? 'destructive' : 'default'}
+          className="h-11 flex-1 font-semibold"
+          onClick={toggleAutoPlay}
+        >
+          <DemoIcon className="fill-current" /> {isAutoPlaying ? '停止演示' : '慢速演示'}
+        </Button>
+        <Button variant="outline" size="icon" className="size-11" aria-label="试听当前音" onClick={playCurrentNote}>
+          <Volume2 />
+        </Button>
+        <Button variant="outline" size="icon" className="size-11" aria-label="下一个音" onClick={handleNextNote}>
+          <SkipForward />
+        </Button>
+      </nav>
     </div>
   );
 }

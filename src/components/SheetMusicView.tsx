@@ -27,7 +27,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   // Layout mode: 'single-line' (单行全景视奏) vs 'multi-line' (双行折叠排版)
   const [layoutMode, setLayoutMode] = useState<'single-line' | 'multi-line'>('single-line');
   // Zoom scale multiplier
-  const [scaleFactor, setScaleFactor] = useState<number>(1.25);
+  // 手机端谱面按原尺寸横向滑动，默认缩放略小以节省纵向空间
+  const [scaleFactor, setScaleFactor] = useState<number>(() => (window.innerWidth < 640 ? 1.0 : 1.25));
   // 提示升降号开关 (Default: true，在音符上直接绘制 #/b 升降号标记)
   const [showAccidentals, setShowAccidentals] = useState<boolean>(true);
   // 音名唱名显示开关 (Default: true，在音符下方标注音名如 C#, F#, G#)
@@ -144,7 +145,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         : Math.max(760, containerWidth - 40);
 
       abcjs.renderAbc(el, activeAbc, {
-        responsive: 'resize',
+        // 窄屏（手机）按原尺寸渲染并横向滑动，避免整行被压缩到屏幕宽度后看不清
+        responsive: containerWidth >= 640 ? 'resize' : undefined,
         scale: scaleFactor,
         staffwidth: targetStaffWidth,
         // 单行模式下强制拉满整行，避免容器变宽后谱面只占左侧一部分
@@ -209,12 +211,16 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         target.style.filter = 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.95))';
       }
 
-      // 平滑居中滚动当前音符
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
+      // 平滑居中滚动当前音符：只横向滚动谱面容器，不带动页面上下跳动
+      const wrapper = scrollWrapperRef.current;
+      if (wrapper) {
+        const t = target.getBoundingClientRect();
+        const w = wrapper.getBoundingClientRect();
+        wrapper.scrollTo({
+          left: wrapper.scrollLeft + (t.left + t.width / 2) - (w.left + w.width / 2),
+          behavior: 'smooth',
+        });
+      }
     }
   }, [currentNoteIndex, activeAbc]);
 
@@ -310,7 +316,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       {/* 五线谱渲染区域 */}
       <div
         ref={scrollWrapperRef}
-        className="w-full overflow-x-auto min-h-[96px] sm:min-h-[140px] p-1 sm:p-3 text-center select-none bg-white text-slate-900 scroll-smooth"
+        className="w-full overflow-x-auto min-h-[96px] sm:min-h-[120px] p-1 sm:px-3 sm:py-1 text-center select-none bg-white text-slate-900 scroll-smooth"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <div

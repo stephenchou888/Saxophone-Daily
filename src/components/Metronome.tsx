@@ -51,9 +51,10 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
   };
 
   return (
-    <Card className="gap-4">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    // 手机端压缩为横条：标题 + BPM 加减 + 启停；滑杆与预设仅在 sm 以上显示
+    <Card className="gap-4 max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:px-4 max-sm:py-3">
+      <CardHeader className="max-sm:min-w-0 max-sm:flex-1 max-sm:px-0">
+        <CardTitle className="flex items-center gap-2 whitespace-nowrap">
           <Gauge className="size-4 text-primary" />
           节拍器辅助
           <span
@@ -67,10 +68,10 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
             )}
           />
         </CardTitle>
-        <CardDescription>稳定气流与手指颗粒感的基础</CardDescription>
+        <CardDescription className="max-sm:hidden">稳定气流与手指颗粒感的基础</CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 max-sm:flex max-sm:shrink-0 max-sm:items-center max-sm:gap-2 max-sm:space-y-0 max-sm:px-0">
         <div className="flex items-center justify-center gap-2">
           <Button variant="outline" size="icon-sm" onClick={() => adjustBpm(-1)} title="减小 1 BPM">
             <Minus />
@@ -82,7 +83,7 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
             <Plus />
           </Button>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 max-sm:hidden">
           <span className="text-xs font-medium text-muted-foreground">{MIN_BPM}</span>
           <Slider
             min={MIN_BPM}
@@ -97,6 +98,7 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <ToggleGroup
+            className="max-sm:hidden"
             type="single"
             variant="outline"
             size="sm"
@@ -114,14 +116,18 @@ export const Metronome: React.FC<MetronomeProps> = ({ onTick }) => {
             ))}
           </ToggleGroup>
 
-          <Button variant={isPlaying ? 'destructive' : 'default'} onClick={togglePlay}>
+          <Button
+            variant={isPlaying ? 'destructive' : 'default'}
+            onClick={togglePlay}
+            aria-label={isPlaying ? '停止节拍' : '启动节拍'}
+          >
             {isPlaying ? (
               <>
-                <Square className="fill-current" /> 停止节拍
+                <Square className="fill-current" /> <span className="max-sm:hidden">停止节拍</span>
               </>
             ) : (
               <>
-                <Play className="fill-current" /> 启动节拍
+                <Play className="fill-current" /> <span className="max-sm:hidden">启动节拍</span>
               </>
             )}
           </Button>
