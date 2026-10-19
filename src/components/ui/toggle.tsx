@@ -12,8 +12,8 @@ const toggleVariants = cva(
         default: 'bg-transparent',
         outline:
           'border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground',
-        // 分段选择器：选中项以品牌主色填充
-        pill: 'bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-xs',
+        // 分段选择器（设计稿样式）：选中项为浮起的白底卡片
+        pill: 'bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm dark:data-[state=on]:bg-input/50',
       },
       size: {
         default: 'h-9 px-2 min-w-9',
