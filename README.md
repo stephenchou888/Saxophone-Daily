@@ -1,82 +1,108 @@
 # 🎷 Saxophone Daily (萨克斯每日练习与指法追踪)
 
-> 一个专为中音（Eb）与高音（Bb）萨克斯初学者及进阶练习者设计的轻量级网页练琴助手。每天自动生成练习任务，配备交互式五线谱、萨克斯按键高亮图示、基准音试听、内置节拍器与打卡追踪系统。
+> 一个专为中音（Eb）与高音（Bb）萨克斯初学者及进阶练习者设计的轻量级网页练琴助手。每天自动轮换主修音阶，配备交互式五线谱、萨克斯按键高亮图示、基准音试听、内置节拍器与打卡追踪。
+
+在线体验：<https://stephenchou888.github.io/Saxophone-Daily/>
 
 ---
 
 ## ✨ 核心功能
 
-- **双调性乐器适配**：一键切换中音萨克斯（Eb）与高音萨克斯（Bb），遵循标准管乐本位移调记谱。
-- **每日智能任务生成**：
-  - 自动轮换 12 个大小调主修调性。
-  - 规划音阶全音域爬行、模进与特色琶音。
-  - 长音、泛音（Overtones）与吐音连音技巧练习提示。
-- **交互式五线谱（ABCjs 引擎）**：
-  - 高清晰度矢量五线谱渲染，自适应电脑与移动端屏幕。
-  - 显示标准高音谱号、调号与节拍线。
-- **萨克斯指法按键可视化**：
-  - 精确绘制萨克斯核心键位（泛音高音键、左手 1-2-3、右手 4-5-6 及小指侧键）。
-  - 按下对应音符时，按键实时点亮高亮，直观明了。
-- **慢速演示与基准音模拟**：
-  - 支持“逐音步进”或“慢速指法演示循环”。
-  - 借助浏览器 Web Audio API 合成平滑音阶，辅助对音准与摸键指法。
-- **无延迟练习节拍器**：
-  - 范围 50 ~ 150 BPM，无音频外部素材依赖，即开即用。
-- **本地连续打卡追踪（Streak）**：
-  - 数据完全存储于浏览器本地（`localStorage`），无需注册登录，数据隐私安全。
+- **双调性乐器适配**：一键切换中音萨克斯（Eb）与高音萨克斯（Bb），遵循标准管乐本位移调记谱，试听按真实移调发声。
+- **每日主修音阶**：按“一年中的第几天”在全部音阶中轮换（约 28 条，见 `src/data/scales.ts`），包括：
+  - 五度圈 12 个自然大调；
+  - 常用自然小调与和声小调；
+  - 特训与特色音阶：高八度、超吹、蓝调、半音阶、五声音阶、琶音。
+  也可以随时手动切换调性。
+- **交互式五线谱（abcjs）**：矢量渲染，支持升降号提示、音名标注、单行/双行排版与缩放；点击谱上音符或下方音名即可跳转并发声。
+- **萨克斯指法图示**：示意图按真实键位排布，当前音的闭合按键高亮，并列出按下的按键与对应手指；另有实物照片对照视图。点击按键可试听。
+- **慢速演示与试听**：逐音步进或自动循环演示，Web Audio API 实时合成萨克斯音色，支持低/中八度、高八度、超吹三个音区。
+- **节拍器**：50 ~ 150 BPM，纯代码合成节拍声，无外部音频素材。
+- **本地连续打卡**：数据仅存储在浏览器本地（`localStorage`），无需注册登录。
+- **浅色 / 深色模式**：默认跟随系统，可手动切换并记住选择。
 
 ---
 
-## 🛠️ 技术选型
+## 🛠️ 技术栈
 
-- **前端架构**：单文件架构（Single-file HTML/CSS/JavaScript），零编译、零打包、开箱即用。
-- **乐谱排版**：[ABCjs](https://paulrosen.github.io/abcjs/)（轻量级矢量五线谱排版库）。
-- **音频引擎**：Web Audio API（纯代码合成正弦/三角波声学音效与节拍器点击音）。
-- **图形界面**：响应式内联 SVG 矢量图形。
-
----
-
-## 🚀 本地快速使用
-
-1. 克隆或下载本项目仓库到本地：
-   ```bash
-   git clone https://github.com/你的用户名/sax-daily.git
-   ```
-2. 双击打开项目目录下的 `index.html` 即可在任意现代浏览器（Chrome、Edge、Safari、Firefox）中运行。
+- **框架**：React 19 + TypeScript + Vite
+- **样式与组件**：Tailwind CSS v4 + [shadcn/ui](https://ui.shadcn.com/)（Radix UI），主题变量在 `src/index.css`
+- **乐谱排版**：[abcjs](https://paulrosen.github.io/abcjs/)
+- **音频**：Web Audio API（`src/hooks/useSoundEngine.ts`）
 
 ---
 
-## 🌐 线上部署指南
+## 🚀 本地开发
 
-本项目为纯静态结构，支持各大免费静态托管平台：
+需要 Node.js 22（与 CI 一致）。
 
-### 方案 A：部署至 GitHub Pages（推荐）
-1. 在 GitHub 上新建一个公开仓库（例如 `sax-daily`）。
-2. 将 `index.html` 和 `README.md` 上传或推送到该仓库的 `main`（或 `master`）分支根目录下。
-3. 进入仓库主页，点击 **Settings** -> 左侧导航选择 **Pages**。
-4. 在 **Branch** 区域选择 `main` 分支并保持路径为 `/(root)`，点击 **Save**。
-5. 约 1~2 分钟后刷新页面，即可通过 `https://<你的用户名>.github.io/sax-daily/` 访问。
+```bash
+git clone https://github.com/stephenchou888/Saxophone-Daily.git
+cd Saxophone-Daily
+npm install
+npm run dev        # 开发服务器 http://localhost:3000
+```
 
-### 方案 B：部署至 Vercel
-1. 访问 [Vercel 官网](https://vercel.com/) 并使用 GitHub 账号登录。
-2. 点击 **Add New...** -> **Project**。
-3. 从列表中选择你的 `sax-daily` 仓库并点击 **Import**。
-4. 无需更改任何配置项，直接点击 **Deploy**。
-5. 部署完成后将获得一个永久可用的免费 HTTPS 域名（例如 `https://sax-daily.vercel.app`）。
+常用命令：
+
+| 命令 | 说明 |
+| --- | --- |
+| `npm run dev` | 启动开发服务器（热更新） |
+| `npm run lint` | TypeScript 类型检查 |
+| `npm run build` | 生产构建，输出到 `dist/` |
+| `npm run preview` | 本地预览 `dist/` 构建结果 |
+| `npm start` | 构建并用 Node（`server.js`）托管 `dist/`，适合自建服务器部署 |
+
+> 注意：项目需要先构建，直接双击打开根目录的 `index.html` 无法运行。
+
+---
+
+## 🌐 部署
+
+### GitHub Pages（已配置）
+
+推送到 `main` 分支后，GitHub Actions（`.github/workflows/deploy.yml`）会自动构建并部署到 GitHub Pages。Pull Request 与其他分支会由 `.github/workflows/ci.yml` 自动做类型检查和构建。
+
+首次在新仓库启用时，需在 **Settings → Pages → Build and deployment** 中把 Source 设为 **GitHub Actions**。
+
+### 其他静态托管（Vercel / Netlify 等）
+
+- 构建命令：`npm run build`
+- 输出目录：`dist`
+
+`vite.config.ts` 使用相对路径 `base: './'`，部署在任意子路径下都能正常加载资源。
 
 ---
 
 ## 📂 项目结构
 
 ```text
-├── index.html        # 核心应用单文件（包含样式、交互、SVG图示与音频合成）
-└── README.md         # 项目使用与部署说明文档
+├── index.html                  # 页面入口（含首帧主题脚本）
+├── server.js                   # 可选：Node/Express 托管 dist/
+├── public/images/              # 萨克斯实物照片
+├── src/
+│   ├── App.tsx                 # 页面布局与练习状态（当前音阶、当前音、演示）
+│   ├── main.tsx                # React 入口
+│   ├── index.css               # Tailwind 与 shadcn 主题变量（浅色/深色）
+│   ├── components/
+│   │   ├── SheetMusicView.tsx  # 五线谱（abcjs）
+│   │   ├── SaxophoneDiagram.tsx# 指法示意图 / 实物图 / 试听控制
+│   │   ├── Metronome.tsx       # 节拍器
+│   │   ├── StreakCard.tsx      # 连续打卡
+│   │   ├── PracticeTipsCard.tsx# 今日练琴重点
+│   │   └── ui/                 # shadcn/ui 基础组件
+│   ├── data/scales.ts          # 音阶定义与音符指法表
+│   ├── hooks/
+│   │   ├── useSoundEngine.ts   # 音色合成、移调计算、按键音高表
+│   │   └── useTheme.ts         # 浅色/深色切换
+│   └── types/music.ts          # 类型定义
+└── .github/workflows/          # CI 与 GitHub Pages 部署
 ```
 
 ---
 
 ## 📝 练习建议
 
-1. **泛音与长音**：正式吹奏音阶前，建议先跟随每日任务完成 10~15 分钟长音练习，确保音色饱满。
+1. **泛音与长音**：正式吹奏音阶前，建议先完成 10~15 分钟长音练习，确保音色饱满。
 2. **慢练先行**：遇到不熟悉的调性（如 3 个升号以上），先开启“慢速指法演示”在乐器上默按指法，再开节拍器以 60 BPM 吹奏。
-3. **坚持打卡**：保持每天哪怕只练 15 分钟，利用打卡天数追踪建立练习节奏。
+3. **坚持打卡**：每天哪怕只练 15 分钟，用打卡天数建立练习节奏。

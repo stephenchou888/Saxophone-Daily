@@ -1,7 +1,5 @@
 {
   "name": "Saxophone Daily - 萨克斯每日基本功与指法训练",
   "description": "今日五线谱视奏 & 动态指法同步教学，专为中音与高音萨克斯初学者及进阶练习者设计的轻量级练琴助手。",
-  "capabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "capabilities": []
 }
