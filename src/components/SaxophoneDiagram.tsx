@@ -223,18 +223,16 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
             )}
 
             {/* Real Instrument Photo Container */}
-            <div className="relative group flex items-center justify-center w-full min-h-[540px] sm:min-h-[640px] py-2 overflow-hidden">
-              <div className="absolute inset-0 bg-radial from-brand/10 via-transparent to-transparent pointer-events-none blur-3xl" />
+            {/* 容器高度跟随图片（#3）；缩放用 CSS zoom 参与布局，放大后可滚动查看而不是被裁切 */}
+            <div className="relative w-full overflow-auto py-2">
+              <div className="pointer-events-none absolute inset-0 bg-radial from-brand/10 via-transparent to-transparent blur-3xl" />
 
-              <div
-                className="relative transition-transform duration-200 inline-block mx-auto select-none"
-                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
-              >
+              <div className="relative mx-auto w-fit select-none" style={{ zoom: zoomLevel }}>
                 <img
                   src={realPhotoSrc}
                   alt={saxType === 'alto' ? '中音萨克斯实拍照' : '高音萨克斯实拍照'}
                   referrerPolicy="no-referrer"
-                  className="block max-h-[520px] sm:max-h-[600px] w-auto mx-auto object-contain drop-shadow-xl"
+                  className="block h-auto max-h-[520px] w-auto max-w-full object-contain drop-shadow-xl sm:max-h-[600px]"
                 />
 
                 {showAnnotations && saxType === 'alto' && (
