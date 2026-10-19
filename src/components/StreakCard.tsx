@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, CheckCircle2, Sparkles, Trophy } from 'lucide-react';
+import { Flame, CheckCircle2, Check, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -84,16 +84,16 @@ export const StreakCard: React.FC = () => {
     // 手机端压缩为横条：左侧天数，右侧打卡按钮
     <Card className="gap-4 text-center max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:px-4 max-sm:py-3 max-sm:text-left">
       <CardHeader className="justify-items-center max-sm:min-w-0 max-sm:flex-1 max-sm:justify-items-start max-sm:gap-1 max-sm:px-0">
-        <CardTitle className="flex items-center gap-2 text-xs tracking-wide text-muted-foreground uppercase max-sm:hidden">
-          <Flame className="size-5 fill-current text-primary animate-bounce" />
-          Daily Streak
+        <CardTitle className="flex items-center gap-2 text-[15px] max-sm:hidden">
+          <Flame className="size-4 fill-current text-brand" />
+          连续打卡
         </CardTitle>
         <CardDescription className="flex items-center justify-center gap-2 pt-1 text-base font-semibold text-foreground max-sm:pt-0 max-sm:text-sm max-sm:whitespace-nowrap">
-          <Flame className="size-4 fill-current text-primary sm:hidden" />
+          <Flame className="size-4 fill-current text-brand sm:hidden" />
           已连续练习打卡
-          <span className="font-mono text-3xl font-bold tracking-tight text-success">{streak}</span>
+          <span className="text-3xl font-semibold tracking-tight tabular-nums max-sm:text-xl">{streak}</span>
           天
-          {streak >= 3 && <Trophy className="ml-1 size-5 fill-primary text-primary animate-pulse" />}
+          {streak >= 3 && <Trophy className="ml-1 size-5 fill-brand text-brand" />}
         </CardDescription>
       </CardHeader>
 
@@ -101,7 +101,7 @@ export const StreakCard: React.FC = () => {
         <p className="text-xs text-muted-foreground max-sm:hidden">{statusMessage}</p>
         <Button
           size="lg"
-          variant={hasCheckedInToday ? 'outline' : 'success'}
+          variant={hasCheckedInToday ? 'secondary' : 'outline'}
           className="w-full disabled:opacity-100 disabled:text-success max-sm:h-9 max-sm:px-3"
           onClick={handleCheckin}
           disabled={hasCheckedInToday}
@@ -112,7 +112,7 @@ export const StreakCard: React.FC = () => {
             </>
           ) : (
             <>
-              <Sparkles /> <span className="max-sm:hidden">完成今日练习打卡</span><span className="sm:hidden">打卡</span>
+              <Check /> <span className="max-sm:hidden">完成今日打卡</span><span className="sm:hidden">打卡</span>
             </>
           )}
         </Button>

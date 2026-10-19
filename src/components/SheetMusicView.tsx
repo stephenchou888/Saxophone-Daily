@@ -225,19 +225,19 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   }, [currentNoteIndex, activeAbc]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl border bg-card shadow-xs">
+    <div className="relative w-full overflow-hidden rounded-lg border bg-card">
       {/* 顶部控制栏：升降号标记、音名显示、单双行切换、缩放 */}
       <div className="flex items-center justify-between gap-3 overflow-x-auto border-b bg-muted/40 px-3 py-1.5 sm:flex-wrap sm:px-4 sm:py-2">
         <div className="hidden shrink-0 items-center gap-2 sm:flex">
-          <span className="size-2.5 rounded-full bg-primary animate-pulse" />
-          <span className="text-xs font-semibold sm:text-sm">矢量五线谱视奏 (本位移调记谱 · 视谱即吹)</span>
+          <span className="size-2 rounded-full bg-brand" />
+          <span className="text-xs font-medium text-muted-foreground">本位移调记谱 · 视谱即吹</span>
         </div>
 
         <div className="flex shrink-0 items-center gap-x-4 gap-y-2 sm:flex-wrap">
           <div className="flex items-center gap-2" title="开启后在音符上直接标注 #/b，关闭则为规范记谱（仅谱号调号）">
             <Switch id="sheet-accidentals" checked={showAccidentals} onCheckedChange={setShowAccidentals} />
             <Label htmlFor="sheet-accidentals" className="cursor-pointer text-xs">
-              <Hash className="size-3.5 text-primary" /> 升降号提示
+              <Hash className="size-3.5 text-muted-foreground" /> 升降号提示
             </Label>
           </div>
 
@@ -290,16 +290,16 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       </div>
 
       {/* 调性升降号特征快速指引条（让初学者一目了然需要升降哪些音） */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto border-b border-primary/20 bg-primary/10 px-3 py-1.5 text-xs sm:px-4">
+      <div className="flex items-center justify-between gap-2 overflow-x-auto border-b px-3 py-1.5 text-xs sm:px-4">
         <div className="flex shrink-0 items-center gap-2 sm:flex-wrap">
-          <span className="flex shrink-0 items-center gap-1 font-semibold">
-            <Sparkles className="size-3.5 text-primary" />
+          <span className="flex shrink-0 items-center gap-1 font-medium text-muted-foreground">
+            <Sparkles className="size-3.5 text-brand" />
             <span className="sm:hidden">本调升降:</span>
             <span className="max-sm:hidden">本调必须升降的音符（已在音符上直接标注）:</span>
           </span>
           {alteredNotes.length > 0 ? (
             alteredNotes.map((note) => (
-              <Badge key={note} variant="soft" className="bg-card font-bold">
+              <Badge key={note} variant="soft" className="font-mono font-semibold">
                 {note}
               </Badge>
             ))
