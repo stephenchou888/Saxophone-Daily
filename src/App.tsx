@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SaxophoneType, ScaleDefinition } from './types/music';
 import { SCALES, FINGERINGS, KEY_NAME_MAP } from './data/scales';
-import { useSoundEngine, getSaxSoundingPitch } from './hooks/useSoundEngine';
+import { useSoundEngine, useAudioMuted, getSaxSoundingPitch } from './hooks/useSoundEngine';
 import { SaxophoneDiagram } from './components/SaxophoneDiagram';
 import { SheetMusicView } from './components/SheetMusicView';
 import { Metronome } from './components/Metronome';
@@ -17,6 +17,7 @@ import {
   Music2,
   Moon,
   Sun,
+  VolumeX,
 } from 'lucide-react';
 import { useTheme } from './hooks/useTheme';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 // 下拉菜单中的音阶分组
@@ -64,6 +66,7 @@ export default function App() {
 
   const { playTone, playClick } = useSoundEngine();
   const { theme, toggleTheme } = useTheme();
+  const [isMuted, setIsMuted] = useAudioMuted();
 
   // Initialize today's date and rotating scale
   useEffect(() => {
@@ -197,6 +200,16 @@ export default function App() {
                 <span className="max-sm:hidden">高音</span> Soprano<span className="max-sm:hidden"> · B♭</span>
               </ToggleGroupItem>
             </ToggleGroup>
+            <Toggle
+              variant="outline"
+              pressed={isMuted}
+              onPressedChange={setIsMuted}
+              aria-label={isMuted ? '取消静音' : '静音'}
+              title={isMuted ? '取消静音' : '静音（试听、按键音、节拍器）'}
+              className="size-9 min-w-0 px-0 data-[state=on]:border-destructive/40 data-[state=on]:bg-destructive/10 data-[state=on]:text-destructive max-sm:size-8"
+            >
+              {isMuted ? <VolumeX /> : <Volume2 />}
+            </Toggle>
             <Button
               variant="outline"
               size="icon"

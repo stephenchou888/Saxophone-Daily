@@ -3,8 +3,6 @@ import { SaxophoneType } from '../types/music';
 import {
   Camera,
   Eye,
-  Volume2,
-  VolumeX,
   ZoomIn,
   ZoomOut,
   RotateCcw,
@@ -20,7 +18,6 @@ import {
 } from '../hooks/useSoundEngine';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 
@@ -84,7 +81,6 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   const { playSaxKeyAction } = useSoundEngine();
   const [register, setRegister] = useState<SaxRegister>('low');
   const [soundMode, setSoundMode] = useState<'both' | 'tone' | 'click'>('both');
-  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [lastPlayedKey, setLastPlayedKey] = useState<{
     id: string;
     label: string;
@@ -136,17 +132,15 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
         concertFreq: Math.round(concertFreq),
       });
 
-      if (!isMuted) {
-        playSaxKeyAction(keyId, saxType, {
-          soundMode,
-          register: activeReg,
-          customFreq: writtenFreq,
-        });
-      }
+      playSaxKeyAction(keyId, saxType, {
+        soundMode,
+        register: activeReg,
+        customFreq: writtenFreq,
+      });
 
       onKeyClick?.(keyId);
     },
-    [isMuted, onKeyClick, playSaxKeyAction, register, saxType, soundMode]
+    [onKeyClick, playSaxKeyAction, register, saxType, soundMode]
   );
 
   const realPhotoSrc =
@@ -633,17 +627,6 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
             </ToggleGroupItem>
           </ToggleGroup>
 
-          <Toggle
-            variant="outline"
-            size="sm"
-            pressed={isMuted}
-            onPressedChange={setIsMuted}
-            title="静音开关"
-            aria-label="静音开关"
-            className="text-success data-[state=on]:border-destructive/40 data-[state=on]:bg-destructive/15 data-[state=on]:text-destructive"
-          >
-            {isMuted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
-          </Toggle>
         </div>
       </div>
 
