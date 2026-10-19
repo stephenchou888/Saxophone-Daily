@@ -3,6 +3,7 @@ import { SaxophoneType } from '../types/music';
 import {
   Camera,
   Eye,
+  Volume2,
   ZoomIn,
   ZoomOut,
   RotateCcw,
@@ -20,6 +21,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
+import { findNotesByKeys } from '@/lib/fingeringLookup';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 // 示意图按键布局（坐标取自设计稿，画布 300×548）。shape: hole = 主音孔圆键，pill = 叉键，key = 侧键/掌键/小指键
 type SchematicKey = { id: string; label: string; x: number; y: number; w: number; h: number; shape: 'hole' | 'pill' | 'key' };
@@ -187,6 +191,12 @@ interface SaxophoneDiagramProps {
   saxType: SaxophoneType;
   /** 当前音的指法提示（#18），示意图视图中显示 */
   tip?: string;
+  /** 当前音阶的音名列表，用于“查指法”时判断能否跳转 */
+  scaleNotes?: string[];
+  /** 查指法：试听识别出的音 */
+  onPlayNote?: (note: string) => void;
+  /** 查指法：跳到当前音阶中的该音 */
+  onJumpToNote?: (note: string) => void;
   onKeyClick?: (keyId: string) => void;
 }
 
@@ -194,6 +204,9 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   activeKeys,
   saxType,
   tip,
+  scaleNotes = [],
+  onPlayNote,
+  onJumpToNote,
   onKeyClick,
 }) => {
   // View mode: 'split' (实物与图例双屏对照), 'diagram' (高精交互指法图谱), 'photo' (真实实物写真)
@@ -216,6 +229,24 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   } | null>(null);
 
   const isKeyActive = (keyId: string) => activeKeys.includes(keyId);
+
+  // 查指法模式（#4）：在示意图上自由组合按键，反查对应的音；关闭时图示跟随当前音
+  const [exploreMode, setExploreMode] = useState(false);
+  const [exploreKeys, setExploreKeys] = useState<string[]>([]);
+  const schematicKeys = exploreMode ? exploreKeys : activeKeys;
+  const matchedNotes = exploreMode ? findNotesByKeys(exploreKeys) : [];
+
+  const setExplore = (on: boolean) => {
+    if (on) setExploreKeys(activeKeys);
+    setExploreMode(on);
+  };
+
+  const handleSchematicKey = (keyId: string) => {
+    if (exploreMode) {
+      setExploreKeys((keys) => (keys.includes(keyId) ? keys.filter((k) => k !== keyId) : [...keys, keyId]));
+    }
+    handleKeyInteraction(keyId);
+  };
 
   // Key Interaction with specific or current register
   const handleKeyInteraction = useCallback(
@@ -292,7 +323,11 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
           variant="pill"
           size="sm"
           value={viewMode}
-          onValueChange={(v) => v && setViewMode(v as typeof viewMode)}
+          onValueChange={(v) => {
+            if (!v) return;
+            setViewMode(v as typeof viewMode);
+            if (v !== 'diagram') setExploreMode(false);
+          }}
         >
           <ToggleGroupItem value="diagram" className="h-7 px-3 text-[13px] font-medium">
             示意图
@@ -629,13 +664,14 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
                   </span>
                 ))}
                 {SCHEMATIC_KEYS.map((k) => {
-                  const active = isKeyActive(k.id);
+                  const active = schematicKeys.includes(k.id);
                   return (
                     <button
                       key={k.id}
                       type="button"
                       aria-label={`${KEY_PITCH_MAP[k.id]?.label ?? k.label}，${active ? '按下' : '开放'}`}
-                      onClick={() => handleKeyInteraction(k.id)}
+                      aria-pressed={exploreMode ? active : undefined}
+                      onClick={() => handleSchematicKey(k.id)}
                       className={cn(
                         'absolute flex cursor-pointer items-center justify-center p-0 transition-[background-color,border-color,transform] outline-none hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-ring/50',
                         k.shape === 'hole' ? 'rounded-full text-base' : k.shape === 'pill' ? 'rounded-full text-[10px]' : 'rounded-md text-[10px]',
@@ -656,14 +692,27 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
             {viewMode === 'diagram' && (
               <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-4">
                 <div>
-                  <div className="mb-2 text-[13px] font-medium">按下的按键</div>
-                  {activeKeys.length === 0 ? (
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-medium">{exploreMode ? '已选按键' : '按下的按键'}</span>
+                    <div className="flex items-center gap-2" title="在示意图上自由组合按键，反查对应的音">
+                      <Switch id="explore-fingering" checked={exploreMode} onCheckedChange={setExplore} />
+                      <Label htmlFor="explore-fingering" className="cursor-pointer text-xs text-muted-foreground">
+                        查指法
+                      </Label>
+                    </div>
+                  </div>
+                  {exploreMode && (
+                    <p className="mb-2 text-xs text-muted-foreground">点击示意图上的按键来按下 / 抬起，自动识别对应的音。</p>
+                  )}
+                  {schematicKeys.length === 0 ? (
                     <div className="rounded-lg border px-3 py-2.5 text-[13px] text-muted-foreground">
                       全开音孔（不按任何按键）
                     </div>
                   ) : (
                     <ul className="divide-y overflow-hidden rounded-lg border">
-                      {activeKeys.map((keyId) => {
+                      {SCHEMATIC_KEYS.map((k) => k.id)
+                        .filter((id) => schematicKeys.includes(id))
+                        .map((keyId) => {
                         const info = KEY_PITCH_MAP[keyId];
                         const { name, detail } = splitKeyLabel(info?.label ?? keyId);
                         return (
@@ -681,7 +730,38 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
                   )}
                 </div>
 
-                {tip && (
+                {exploreMode && (
+                  <div className="space-y-2.5 rounded-lg border p-3" aria-live="polite">
+                    <div className="text-xs text-muted-foreground">对应的音</div>
+                    {matchedNotes.length > 0 ? (
+                      <>
+                        <div className="font-mono text-2xl font-semibold tracking-tight">
+                          {matchedNotes.map((n) => n.replace('#', '♯').replace(/^([A-G])b/, '$1♭')).join(' / ')}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" onClick={() => onPlayNote?.(matchedNotes[0])}>
+                            <Volume2 /> 试听
+                          </Button>
+                          {matchedNotes.some((n) => scaleNotes.includes(n)) && (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                onJumpToNote?.(matchedNotes.find((n) => scaleNotes.includes(n))!);
+                                setExploreMode(false);
+                              }}
+                            >
+                              跳到该音
+                            </Button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-[13px] text-muted-foreground">这个按键组合不是常用的标准指法。</p>
+                    )}
+                  </div>
+                )}
+
+                {!exploreMode && tip && (
                   <div className="flex gap-2.5 rounded-lg bg-muted p-3">
                     <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                     <p className="text-[13px] text-foreground/80">{tip}</p>

@@ -128,6 +128,19 @@ export default function App() {
 
   const handleSelectNoteIndex = goToNote;
 
+  // 指法图示“查指法”识别出的音：试听，或跳到当前音阶中的该音（#4）
+  const playNoteByName = useCallback(
+    (note: string) => {
+      const fingering = FINGERINGS[note];
+      if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
+    },
+    [playTone, saxType]
+  );
+  const jumpToNoteByName = useCallback(
+    (note: string) => goToNote(currentScale.notes.indexOf(note)),
+    [goToNote, currentScale.notes]
+  );
+
   // 慢速演示：每拍前进一个音；单次模式到最后一个音后自动停止
   const demoStep = () => {
     if (!demoLoop && currentNoteIndex >= currentScale.notes.length - 1) {
@@ -430,7 +443,14 @@ export default function App() {
           {/* ===================== Fingering Diagram Card ===================== */}
           <Card className="py-4 sm:py-5 lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1">
             <CardContent className="flex flex-col items-center justify-center px-3 sm:px-6">
-              <SaxophoneDiagram activeKeys={currentFingering.keys} saxType={saxType} tip={NOTE_TIPS[currentNoteName]} />
+              <SaxophoneDiagram
+                activeKeys={currentFingering.keys}
+                saxType={saxType}
+                tip={NOTE_TIPS[currentNoteName]}
+                scaleNotes={currentScale.notes}
+                onPlayNote={playNoteByName}
+                onJumpToNote={jumpToNoteByName}
+              />
             </CardContent>
           </Card>
 
