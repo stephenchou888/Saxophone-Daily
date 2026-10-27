@@ -231,9 +231,9 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
     register: SaxRegister;
     writtenFreq: number;
     writtenNote: string;
-    concertNote: string;
-    concertFreq: number;
   } | null>(null);
+  // 实音按当前乐器即时计算：试听后切换中音 / 高音，横幅里的实音随之更新
+  const lastConcert = lastPlayedKey ? getSaxSoundingPitch(lastPlayedKey.writtenFreq, saxType) : null;
 
   const isKeyActive = (keyId: string) => activeKeys.includes(keyId);
 
@@ -260,11 +260,11 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
     (keyId: string, customRegister?: SaxRegister) => {
       let activeReg = customRegister || register;
       if (keyId === 'key_octave') {
-        activeReg = register === 'low' ? 'high' : register;
+        activeReg = activeReg === 'low' ? 'high' : activeReg;
       } else if (keyId === 'key_front_f' || keyId.startsWith('key_palm')) {
         // 前 F 与掌键只用于高音区（掌键 D6/E♭6/F6）：低音区下自动按超吹音区发声，
         // 与实拍照标注、当前音符卡对掌键音的分类保持一致
-        activeReg = register === 'low' ? 'altissimo' : register;
+        activeReg = activeReg === 'low' ? 'altissimo' : activeReg;
       }
 
       const keyInfo = KEY_PITCH_MAP[keyId];
@@ -284,16 +284,12 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
         }
       }
 
-      const { concertFreq, noteName: concertNote } = getSaxSoundingPitch(writtenFreq, saxType);
-
       setLastPlayedKey({
         id: keyId,
         label: keyInfo?.label || keyId,
         register: activeReg,
-        writtenFreq: Math.round(writtenFreq),
+        writtenFreq,
         writtenNote,
-        concertNote,
-        concertFreq: Math.round(concertFreq),
       });
 
       playSaxKeyAction(keyId, saxType, {
@@ -874,11 +870,11 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
             </Badge>
             <span>{lastPlayedKey.label}</span>
             <span className="text-[11px] text-muted-foreground">
-              记谱音 <b className="font-mono text-foreground">{lastPlayedKey.writtenNote}</b> ({lastPlayedKey.writtenFreq}Hz)
+              记谱音 <b className="font-mono text-foreground">{lastPlayedKey.writtenNote}</b> ({Math.round(lastPlayedKey.writtenFreq)}Hz)
             </span>
             <Badge variant="outline" className="bg-card">
               {saxType === 'alto' ? '中音实音 (Eb)' : '高音实音 (Bb)'}:
-              <b className="text-success">{lastPlayedKey.concertNote}</b> ({lastPlayedKey.concertFreq}Hz)
+              <b className="text-success">{lastConcert?.noteName}</b> ({Math.round(lastConcert?.concertFreq ?? 0)}Hz)
             </Badge>
           </div>
         ) : (

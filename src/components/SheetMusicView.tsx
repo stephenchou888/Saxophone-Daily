@@ -199,14 +199,9 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       });
     });
 
-    // 高亮目标音符
-    let target = el.querySelector(`.abcjs-n${currentNoteIndex}`) as HTMLElement | null;
-    if (!target) {
-      const allNotes = el.querySelectorAll('.abcjs-note');
-      if (allNotes && allNotes[currentNoteIndex]) {
-        target = allNotes[currentNoteIndex] as HTMLElement;
-      }
-    }
+    // 高亮目标音符：按谱面上第 N 个音符取，与点击切音的序号一致。
+    // （abcjs 的 abcjs-n{N} 类是小节内序号且歌词也带该类，不能直接用来按全局序号查找）
+    const target = (el.querySelectorAll('.abcjs-note')[currentNoteIndex] as HTMLElement | undefined) ?? null;
 
     if (target) {
       target.classList.add('active-score-note');

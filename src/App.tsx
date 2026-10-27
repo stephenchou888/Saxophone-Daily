@@ -8,6 +8,7 @@ import { SheetMusicView } from './components/SheetMusicView';
 import { Metronome } from './components/Metronome';
 import { StreakCard } from './components/StreakCard';
 import { PracticeTipsCard } from './components/PracticeTipsCard';
+import { TranspositionChart } from './components/TranspositionChart';
 import {
   Volume2,
   SkipBack,
@@ -563,6 +564,9 @@ export default function App() {
             <StreakCard />
           </div>
         </div>
+
+        {/* ===================== Sax ↔ Piano Transposition ===================== */}
+        <TranspositionChart saxType={saxType} currentNote={currentNoteName} />
 
         {/* ===================== Practice Tips ===================== */}
         <PracticeTipsCard scaleName={scaleDisplayName(currentScale)} scaleTip={currentScale.tip} />
