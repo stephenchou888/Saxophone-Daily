@@ -22,6 +22,17 @@ describe('buildPracticeNotes', () => {
     expect(n).toHaveLength(24);
   });
 
+  it('fourths: 1-4, 2-5 … and fifths: 1-5, 2-6 …, mirrored down', () => {
+    const four = buildPracticeNotes(g, 'fourths');
+    expect(four.slice(0, 4)).toEqual(['G4', 'C5', 'A4', 'D5']);
+    expect(four.slice(-2)).toEqual(['C5', 'G4']); // 下行最后一组 4-1
+    expect(four).toHaveLength(20); // 上行 5 组 + 下行 5 组
+    const five = buildPracticeNotes(g, 'fifths');
+    expect(five.slice(0, 4)).toEqual(['G4', 'D5', 'A4', 'E5']);
+    expect(five.slice(-2)).toEqual(['D5', 'G4']); // 下行最后一组 5-1
+    expect(five).toHaveLength(16); // 上行 4 组 + 下行 4 组
+  });
+
   it('groups of three and four', () => {
     expect(buildPracticeNotes(g, 'groups3').slice(0, 6)).toEqual(['G4', 'A4', 'B4', 'A4', 'B4', 'C5']);
     const four = buildPracticeNotes(g, 'groups4');
