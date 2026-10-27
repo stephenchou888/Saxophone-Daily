@@ -146,6 +146,23 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   // 每次渲染完成后递增，驱动下方的当前音高亮（渲染是异步的）
   const [renderTick, setRenderTick] = useState(0);
 
+  // 谱面容器宽度：窗口缩放时重新排版（防抖，拖动窗口时不会连续重绘）
+  const [wrapperWidth, setWrapperWidth] = useState(0);
+  useEffect(() => {
+    const wrapper = scrollWrapperRef.current;
+    if (!wrapper || typeof ResizeObserver === 'undefined') return;
+    let timer: number | undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setWrapperWidth(Math.round(entry.contentRect.width)), 120);
+    });
+    observer.observe(wrapper);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, []);
+
   // 渲染乐谱（ABCjs 矢量 SVG）
   useEffect(() => {
     let cancelled = false;
@@ -156,6 +173,9 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
 
       try {
         el.innerHTML = '';
+        // abcjs 会在容器上写入内联样式（固定高度、responsive 模式的 padding-bottom 等），
+        // 不清掉会在多次重绘间累积，导致谱面下方出现大片空白
+        el.removeAttribute('style');
         const containerWidth = scrollWrapperRef.current?.clientWidth || 900;
         const targetStaffWidth = layoutMode === 'single-line'
           ? Math.max(1100, containerWidth - 40, scale.notes.length * MIN_NOTE_WIDTH)
@@ -193,7 +213,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [activeAbc, scaleFactor, layoutMode, onNoteClick]);
+  }, [activeAbc, scaleFactor, layoutMode, onNoteClick, wrapperWidth]);
 
   // 同步高亮当前正在弹奏/练习的音符
   useEffect(() => {
