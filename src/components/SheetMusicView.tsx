@@ -16,13 +16,22 @@ interface SheetMusicViewProps {
   abcNotation?: string;
   currentNoteIndex: number;
   onNoteClick?: (index: number) => void;
+  /** 每小节拍数（四分音符），默认 4；模进练习按组形设置，让每组落在整小节里 */
+  beatsPerMeasure?: number;
+  /** 谱面标题，默认“<调名> 视奏练习” */
+  title?: string;
 }
+
+// 单行模式下每个音至少占的谱面宽度（abcjs 未缩放单位），音很多的模进练习据此加宽并横向滚动
+const MIN_NOTE_WIDTH = 34;
 
 export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   scale,
   abcNotation,
   currentNoteIndex,
   onNoteClick,
+  beatsPerMeasure = 4,
+  title,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollWrapperRef = useRef<HTMLDivElement>(null);
@@ -88,7 +97,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         const cleanLabel = n.replace(/[0-9]/g, '').replace('#', '♯').replace('b', '♭');
         curW.push(cleanLabel);
 
-        if (curM.length === 4 || idx === scale.notes.length - 1) {
+        if (curM.length === beatsPerMeasure || idx === scale.notes.length - 1) {
           measures.push(curM.join(' '));
           words.push(curW.join(' '));
           curM = [];
@@ -96,8 +105,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         }
       });
 
-      const cleanTitle = scaleDisplayName(scale);
-      const header = `X:1\nT:${cleanTitle} 视奏练习\nM:4/4\nL:1/4\nK:${keySig}`;
+      const header = `X:1\nT:${title ?? `${scaleDisplayName(scale)} 视奏练习`}\nM:${beatsPerMeasure}/4\nL:1/4\nK:${keySig}`;
 
       if (layoutMode === 'single-line') {
         const musicLine = measures.join(' | ') + ' |]';
@@ -133,7 +141,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       return `${headerLines.join('\n')}\n${musicLines.join(' ')}`;
     }
     return baseAbc;
-  }, [scale, abcNotation, layoutMode, showAccidentals, showNoteNames]);
+  }, [scale, abcNotation, layoutMode, showAccidentals, showNoteNames, beatsPerMeasure, title]);
 
   // 每次渲染完成后递增，驱动下方的当前音高亮（渲染是异步的）
   const [renderTick, setRenderTick] = useState(0);
@@ -150,12 +158,13 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         el.innerHTML = '';
         const containerWidth = scrollWrapperRef.current?.clientWidth || 900;
         const targetStaffWidth = layoutMode === 'single-line'
-          ? Math.max(1100, containerWidth - 40)
+          ? Math.max(1100, containerWidth - 40, scale.notes.length * MIN_NOTE_WIDTH)
           : Math.max(760, containerWidth - 40);
+        // 谱面放得下时铺满容器；窄屏（手机）或音太多时按原尺寸渲染并横向滑动，避免被压缩得看不清
+        const fitsContainer = containerWidth >= 640 && targetStaffWidth * scaleFactor <= containerWidth * 1.4;
 
         abcjs.renderAbc(el, activeAbc, {
-          // 窄屏（手机）按原尺寸渲染并横向滑动，避免整行被压缩到屏幕宽度后看不清
-          responsive: containerWidth >= 640 ? 'resize' : undefined,
+          responsive: fitsContainer ? 'resize' : undefined,
           scale: scaleFactor,
           staffwidth: targetStaffWidth,
           // 单行模式下强制拉满整行，避免容器变宽后谱面只占左侧一部分

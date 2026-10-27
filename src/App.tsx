@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { SaxophoneType, ScaleDefinition } from './types/music';
 import { SCALES, FINGERINGS, KEY_NAME_MAP } from './data/scales';
 import { NOTE_TIPS } from './data/noteTips';
@@ -26,6 +26,7 @@ import {
 import { useTheme } from './hooks/useTheme';
 import { useBeatClock } from './hooks/useBeatClock';
 import { getTodayScale, scaleDisplayName } from './lib/dailyScale';
+import { buildPracticeNotes, PRACTICE_PATTERNS, PracticePattern, supportsSequences } from './lib/sequences';
 import { ScalePicker } from './components/ScalePicker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
 
 const CATEGORY_LABEL: Record<NonNullable<ScaleDefinition['category']>, string> = {
   special: '特色音阶',
@@ -80,7 +82,18 @@ export default function App() {
     setTodayDateStr(now.toLocaleDateString('zh-CN', dateOpts));
   }, []);
 
-  const currentNoteName = currentScale.notes[currentNoteIndex] || 'C4';
+  // 练习模式：音阶或大小调模进（三度 / 三音组 / 四音组 / 琶音）；特色音阶只提供音阶本身
+  const [pattern, setPattern] = useState<PracticePattern>('scale');
+  const sequencesAvailable = supportsSequences(currentScale);
+  const activePattern: PracticePattern = sequencesAvailable ? pattern : 'scale';
+  const patternInfo = PRACTICE_PATTERNS.find((p) => p.id === activePattern)!;
+  const practiceNotes = useMemo(() => buildPracticeNotes(currentScale, activePattern), [currentScale, activePattern]);
+  const practiceScale = useMemo(
+    () => (activePattern === 'scale' ? currentScale : { ...currentScale, notes: practiceNotes }),
+    [currentScale, activePattern, practiceNotes]
+  );
+
+  const currentNoteName = practiceNotes[currentNoteIndex] || 'C4';
   const currentFingering = FINGERINGS[currentNoteName] || {
     desc: currentNoteName,
     keys: [],
@@ -114,21 +127,21 @@ export default function App() {
   // StrictMode 开发模式下会被调用两次，副作用会导致一个音响两次（#8）
   const goToNote = useCallback(
     (index: number) => {
-      if (index < 0 || index >= currentScale.notes.length) return;
+      if (index < 0 || index >= practiceNotes.length) return;
       setCurrentNoteIndex(index);
-      const fingering = FINGERINGS[currentScale.notes[index]];
+      const fingering = FINGERINGS[practiceNotes[index]];
       if (fingering) playTone(fingering.freq, saxType, 0.45, getNoteRegister(fingering));
     },
-    [currentScale.notes, playTone, saxType]
+    [practiceNotes, playTone, saxType]
   );
 
   const handlePrevNote = useCallback(() => {
-    goToNote(currentNoteIndex > 0 ? currentNoteIndex - 1 : currentScale.notes.length - 1);
-  }, [goToNote, currentNoteIndex, currentScale.notes.length]);
+    goToNote(currentNoteIndex > 0 ? currentNoteIndex - 1 : practiceNotes.length - 1);
+  }, [goToNote, currentNoteIndex, practiceNotes.length]);
 
   const handleNextNote = useCallback(() => {
-    goToNote(currentNoteIndex < currentScale.notes.length - 1 ? currentNoteIndex + 1 : 0);
-  }, [goToNote, currentNoteIndex, currentScale.notes.length]);
+    goToNote(currentNoteIndex < practiceNotes.length - 1 ? currentNoteIndex + 1 : 0);
+  }, [goToNote, currentNoteIndex, practiceNotes.length]);
 
   const handleSelectNoteIndex = goToNote;
 
@@ -141,13 +154,13 @@ export default function App() {
     [playTone, saxType]
   );
   const jumpToNoteByName = useCallback(
-    (note: string) => goToNote(currentScale.notes.indexOf(note)),
-    [goToNote, currentScale.notes]
+    (note: string) => goToNote(practiceNotes.indexOf(note)),
+    [goToNote, practiceNotes]
   );
 
   // 慢速演示：每拍前进一个音；单次模式到最后一个音后自动停止
   const demoStep = () => {
-    if (!demoLoop && currentNoteIndex >= currentScale.notes.length - 1) {
+    if (!demoLoop && currentNoteIndex >= practiceNotes.length - 1) {
       setIsAutoPlaying(false);
       return;
     }
@@ -174,7 +187,7 @@ export default function App() {
 
   const toggleAutoPlay = () => {
     if (!isAutoPlaying) {
-      const restartFromFirst = !demoLoop && currentNoteIndex >= currentScale.notes.length - 1;
+      const restartFromFirst = !demoLoop && currentNoteIndex >= practiceNotes.length - 1;
       if (isMetronomeOn) {
         // 跟着节拍器走：在下一拍响起当前音（必要时先回到第一个音，但不立刻发声）
         if (restartFromFirst) setCurrentNoteIndex(0);
@@ -210,6 +223,22 @@ export default function App() {
     beatRef.current = -1;
   };
 
+  // 音名按钮条可横向滚动时，让当前音保持在可见区域中间（只滚动按钮条，不带动页面）
+  const noteStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = noteStripRef.current;
+    const current = strip?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (!strip || !current || strip.scrollWidth <= strip.clientWidth) return;
+    strip.scrollTo({ left: current.offsetLeft - strip.clientWidth / 2 + current.offsetWidth / 2, behavior: 'smooth' });
+  }, [currentNoteIndex, practiceNotes]);
+
+  const handlePatternChange = (next: PracticePattern) => {
+    setPattern(next);
+    setIsAutoPlaying(false);
+    demoPendingStartRef.current = false;
+    setCurrentNoteIndex(0);
+  };
+
   const handleScaleChange = (scaleId: string) => {
     const found = SCALES.find((s) => s.id === scaleId);
     if (found) {
@@ -220,7 +249,7 @@ export default function App() {
   };
 
   const transposeLabel = saxType === 'alto' ? '低大六度' : '低大二度';
-  const progressPct = ((currentNoteIndex + 1) / currentScale.notes.length) * 100;
+  const progressPct = ((currentNoteIndex + 1) / practiceNotes.length) * 100;
 
   const demoLabel = isAutoPlaying ? '停止演示' : '慢速指法演示';
   const DemoIcon = isAutoPlaying ? Square : Play;
@@ -318,7 +347,10 @@ export default function App() {
           <CardContent className="space-y-3 px-3 sm:space-y-4 sm:px-6">
             <div className="flex items-center justify-between gap-3 sm:items-start">
               <div className="flex min-w-0 items-baseline gap-2 sm:block">
-                <h2 className="text-base font-semibold">五线谱视奏</h2>
+                <h2 className="text-base font-semibold whitespace-nowrap">
+                  五线谱视奏
+                  {activePattern !== 'scale' && <span className="text-muted-foreground max-sm:hidden"> · {patternInfo.title}</span>}
+                </h2>
                 <p className="text-xs text-muted-foreground sm:text-[13px]">
                   <span className="sm:hidden">左右滑动查看</span>
                   <span className="max-sm:hidden">
@@ -327,20 +359,59 @@ export default function App() {
                 </p>
               </div>
               <div className="shrink-0 text-xs text-muted-foreground sm:text-sm">
-                第 <span className="font-mono font-semibold text-foreground">{currentNoteIndex + 1} / {currentScale.notes.length}</span> 音
+                第 <span className="font-mono font-semibold text-foreground">{currentNoteIndex + 1} / {practiceNotes.length}</span> 音
               </div>
             </div>
 
+            {/* 练习模式：音阶 / 大小调模进 */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <div className="-mx-1 overflow-x-auto px-1">
+                <ToggleGroup
+                  type="single"
+                  variant="pill"
+                  size="sm"
+                  aria-label="练习模式"
+                  value={activePattern}
+                  onValueChange={(v) => v && handlePatternChange(v as PracticePattern)}
+                >
+                  {PRACTICE_PATTERNS.map((p) => (
+                    <ToggleGroupItem
+                      key={p.id}
+                      value={p.id}
+                      disabled={p.id !== 'scale' && !sequencesAvailable}
+                      title={p.id !== 'scale' && !sequencesAvailable ? '模进练习只适用于大调与小调' : p.title}
+                      className="h-7 px-3 text-[13px] font-medium"
+                    >
+                      {p.label}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+              <p className="min-w-0 text-xs text-muted-foreground">
+                {sequencesAvailable
+                  ? patternInfo.description
+                  : '模进练习（三度、三音组、四音组、琶音）适用于大调与小调，特色音阶请按原音阶练习。'}
+              </p>
+            </div>
+
             <SheetMusicView
-              scale={currentScale}
+              scale={practiceScale}
               abcNotation={currentScale.abc}
               currentNoteIndex={currentNoteIndex}
               onNoteClick={handleSelectNoteIndex}
+              beatsPerMeasure={patternInfo.beatsPerMeasure}
+              title={`${scaleDisplayName(currentScale)} ${activePattern === 'scale' ? '视奏练习' : patternInfo.title}`}
             />
 
-            {/* 音名按钮：已练过的灰掉，当前音高亮，点击跳转 */}
-            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-              {currentScale.notes.map((n, idx) => (
+            {/* 音名按钮：已练过的灰掉，当前音高亮，点击跳转。音较少时桌面端换行显示，模进等长序列改为单行横向滚动 */}
+            <div
+              ref={noteStripRef}
+              className={cn(
+                'relative -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1',
+                practiceNotes.length <= 24 && 'sm:flex-wrap sm:overflow-visible sm:pb-0'
+              )}
+            >
+              {practiceNotes.map((n, idx) => (
                 <Button
                   key={`${n}-${idx}`}
                   size="sm"
@@ -369,7 +440,7 @@ export default function App() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-muted-foreground sm:text-[13px]">
-                    当前音符<span className="lg:hidden"> · {currentNoteIndex + 1} / {currentScale.notes.length}</span>
+                    当前音符<span className="lg:hidden"> · {currentNoteIndex + 1} / {practiceNotes.length}</span>
                   </div>
                   <div className="mt-1 text-4xl leading-none font-semibold tracking-tighter sm:text-6xl">
                     {prettyNote(currentNoteName)}
@@ -392,7 +463,7 @@ export default function App() {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>音阶进度</span>
                   <span className="font-mono">
-                    {currentNoteIndex + 1} / {currentScale.notes.length}
+                    {currentNoteIndex + 1} / {practiceNotes.length}
                   </span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -468,7 +539,7 @@ export default function App() {
                 activeKeys={currentFingering.keys}
                 saxType={saxType}
                 tip={NOTE_TIPS[currentNoteName]}
-                scaleNotes={currentScale.notes}
+                scaleNotes={practiceNotes}
                 onPlayNote={playNoteByName}
                 onJumpToNote={jumpToNoteByName}
               />
