@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Maximize2, Minimize2, ZoomIn, ZoomOut, Eye, Sparkles, Hash } from 'lucide-react';
 import { ScaleDefinition } from '../types/music';
 import { scaleDisplayName } from '@/lib/dailyScale';
+import { notesToAbcMeasures } from '@/lib/abcNotes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -69,41 +70,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         keySig = kMatch[1];
       }
 
-      const noteToAbc = (noteName: string, withAcc: boolean): string => {
-        const match = noteName.match(/^([A-G])([#b]?)([3-6])$/);
-        if (!match) return 'C';
-        const [, letter, acc, octaveStr] = match;
-        const octave = parseInt(octaveStr, 10);
-        let prefix = '';
-        if (withAcc) {
-          if (acc === '#') prefix = '^';
-          else if (acc === 'b') prefix = '_';
-        }
-        if (octave === 3) return `${prefix}${letter},`;
-        if (octave === 4) return `${prefix}${letter.toUpperCase()}`;
-        if (octave === 5) return `${prefix}${letter.toLowerCase()}`;
-        if (octave === 6) return `${prefix}${letter.toLowerCase()}'`;
-        return `${prefix}${letter}`;
-      };
-
-      const measures: string[] = [];
-      const words: string[] = [];
-      let curM: string[] = [];
-      let curW: string[] = [];
-
-      scale.notes.forEach((n, idx) => {
-        const abcN = noteToAbc(n, showAccidentals);
-        curM.push(abcN);
-        const cleanLabel = n.replace(/[0-9]/g, '').replace('#', '♯').replace('b', '♭');
-        curW.push(cleanLabel);
-
-        if (curM.length === beatsPerMeasure || idx === scale.notes.length - 1) {
-          measures.push(curM.join(' '));
-          words.push(curW.join(' '));
-          curM = [];
-          curW = [];
-        }
-      });
+      // 按调号与小节内临时记号规则写出升降号 / 还原号（见 lib/abcNotes）
+      const { measures, words } = notesToAbcMeasures(scale.notes, keySig, beatsPerMeasure, showAccidentals);
 
       const header = `X:1\nT:${title ?? `${scaleDisplayName(scale)} 视奏练习`}\nM:${beatsPerMeasure}/4\nL:1/4\nK:${keySig}`;
 
