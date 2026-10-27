@@ -2,7 +2,7 @@ import { FINGERINGS } from '@/data/scales';
 import { ScaleDefinition } from '@/types/music';
 
 // 大小调模进练习：由音阶的上行音自动生成，上行按级进模进，下行镜像返回
-export type PracticePattern = 'scale' | 'thirds' | 'groups3' | 'groups4' | 'triads';
+export type PracticePattern = 'scale' | 'thirds' | 'fourths' | 'fifths' | 'groups3' | 'groups4' | 'triads';
 
 export const PRACTICE_PATTERNS: {
   id: PracticePattern;
@@ -19,6 +19,20 @@ export const PRACTICE_PATTERNS: {
     title: '三度模进',
     beatsPerMeasure: 4,
     description: '1-3、2-4、3-5……逐级上行再下行，练习三度跳进时手指同时起落与气息连贯。',
+  },
+  {
+    id: 'fourths',
+    label: '四度',
+    title: '四度模进',
+    beatsPerMeasure: 4,
+    description: '1-4、2-5、3-6……逐级上行再下行，练习四度跳进的换指与音程准确度。',
+  },
+  {
+    id: 'fifths',
+    label: '五度',
+    title: '五度模进',
+    beatsPerMeasure: 4,
+    description: '1-5、2-6、3-7……逐级上行再下行，练习五度大跳时的口型稳定与气息支撑。',
   },
   {
     id: 'groups3',
@@ -72,6 +86,10 @@ export function buildPracticeNotes(scale: ScaleDefinition, pattern: PracticePatt
   switch (pattern) {
     case 'thirds':
       return sequence(asc, [0, 2]);
+    case 'fourths':
+      return sequence(asc, [0, 3]);
+    case 'fifths':
+      return sequence(asc, [0, 4]);
     case 'groups3':
       return sequence(asc, [0, 1, 2]);
     case 'groups4':
