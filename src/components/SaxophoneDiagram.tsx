@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useRef } from 'react';
 import { SaxophoneType } from '../types/music';
 import {
   Camera,
@@ -56,6 +56,76 @@ const SCHEMATIC_SECTIONS: { label: string; y: number }[] = [
   { label: '左手', y: 108 },
   { label: '右手', y: 318 },
 ];
+
+// 示意图按键坐标的设计尺寸
+const SCHEMATIC_W = 300;
+const SCHEMATIC_H = 548;
+// 示意图下方到视口底部要留出的距离：图框下内边距 + 卡片下内边距 + 余量
+const SCHEMATIC_BOTTOM_GAP = 40;
+const SCHEMATIC_MIN_SCALE = 0.6;
+const LG_BREAKPOINT = 1024;
+
+// 页面上吸顶 / 固定在底部的元素用 data-fit-reserve="top" | "bottom" 标记，手机端缩放时扣除它们的高度
+// （只计当前确实吸顶 / 固定的，随视口条件切换为普通流的元素不占屏）
+const reservedHeight = (edge: 'top' | 'bottom') =>
+  Array.from(document.querySelectorAll<HTMLElement>(`[data-fit-reserve="${edge}"]`)).reduce((sum, node) => {
+    const { display, position } = getComputedStyle(node);
+    const pinned = display !== 'none' && (position === 'sticky' || position === 'fixed');
+    return sum + (pinned ? node.getBoundingClientRect().height : 0);
+  }, 0);
+
+/**
+ * 按视口剩余高度等比缩放示意图：
+ * - 桌面端（lg+）：让五线谱、当前音符与全部按键首屏同时可见；
+ * - 手机端：滚动到图示后，吸顶的谱面与底部控制条之间正好放下整张图。
+ * 宽度同时受容器限制，320px 宽的小屏上不会横向溢出。
+ * 计算只依赖示意图上方的布局与容器宽度，缩放本身不改变这些量，因此不会来回抖动。
+ */
+function useSchematicFitScale(ref: React.RefObject<HTMLDivElement | null>, enabled: boolean) {
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !enabled) {
+      setScale(1);
+      return;
+    }
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      let available: number;
+      if (window.innerWidth >= LG_BREAKPOINT) {
+        available = window.innerHeight - (rect.top + window.scrollY) - SCHEMATIC_BOTTOM_GAP;
+      } else {
+        const card = el.closest('[data-slot="card"]');
+        const chrome = card ? rect.top - card.getBoundingClientRect().top : 0;
+        available =
+          window.innerHeight - reservedHeight('top') - reservedHeight('bottom') - chrome - SCHEMATIC_BOTTOM_GAP;
+      }
+      // 图框（含内边距）的可用宽度：取外层图示列宽减去图框左右内边距
+      const frame = el.parentElement;
+      const column = frame?.parentElement;
+      let widthScale = 1;
+      if (frame && column) {
+        const fs = getComputedStyle(frame);
+        const pad = parseFloat(fs.paddingLeft) + parseFloat(fs.paddingRight) + parseFloat(fs.borderLeftWidth) + parseFloat(fs.borderRightWidth);
+        widthScale = (column.clientWidth - pad) / SCHEMATIC_W;
+      }
+      const next = Math.min(1, widthScale, Math.max(SCHEMATIC_MIN_SCALE, available / SCHEMATIC_H));
+      setScale(Math.round(next * 1000) / 1000);
+    };
+    update();
+    // 上方的谱面、字体异步渲染完成后会推移示意图位置，监听 body 尺寸变化重新计算
+    const ro = new ResizeObserver(update);
+    ro.observe(document.body);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [ref, enabled]);
+
+  return scale;
+}
 
 // 「左手1号键 (B音孔 · 左手食指)」→ 名称「左手1号键」，说明取括号内最后一段「左手食指」
 function splitKeyLabel(label: string): { name: string; detail: string } {
@@ -220,6 +290,8 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
   const [viewMode, setViewMode] = useState<'split' | 'diagram' | 'photo'>('diagram');
   const [showAnnotations, setShowAnnotations] = useState<boolean>(true);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
+  const schematicRef = useRef<HTMLDivElement>(null);
+  const schematicScale = useSchematicFitScale(schematicRef, viewMode !== 'photo');
 
   // Sound Engine & Register Selector: 'low' (低/中八度), 'high' (高八度), 'altissimo' (超吹音区)
   const { playSaxKeyAction } = useSoundEngine();
@@ -318,7 +390,8 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
       <div className="flex w-full flex-wrap items-center justify-between gap-2.5">
         <div className="min-w-0">
           <h2 className="text-base font-semibold tracking-tight">指法图示</h2>
-          <p className="mt-0.5 text-[13px] text-muted-foreground">
+          {/* 手机与桌面端省掉说明行，让标题和视图切换并成一行，把高度留给示意图 */}
+          <p className="mt-0.5 hidden text-[13px] text-muted-foreground sm:block lg:hidden">
             {saxType === 'alto' ? 'E♭ 中音萨克斯 · 实音低大六度' : 'B♭ 高音萨克斯 · 实音低大二度'} · 点击按键试听
           </p>
         </div>
@@ -654,43 +727,52 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
               viewMode === 'split' ? 'md:col-span-6' : 'md:col-span-12'
             )}
           >
-            <div className="mx-auto shrink-0 rounded-lg border bg-muted/40 px-3 py-4 sm:px-5">
-              {/* 示意图画布固定 300px 宽，320px 宽的小屏手机上整体缩小以免横向溢出 */}
-              <div className="relative h-[548px] w-[300px] max-[360px]:[zoom:0.8]">
-                <div className="absolute top-24 left-[149px] h-96 w-0.5 bg-border" />
-                <div className="absolute top-[300px] left-10 w-[220px] border-t border-dashed border-muted-foreground/30" />
-                {SCHEMATIC_SECTIONS.map((sec) => (
-                  <span
-                    key={sec.label}
-                    className="absolute left-0 text-[11px] font-medium text-muted-foreground"
-                    style={{ top: sec.y }}
-                  >
-                    {sec.label}
-                  </span>
-                ))}
-                {SCHEMATIC_KEYS.map((k) => {
-                  const active = schematicKeys.includes(k.id);
-                  return (
-                    <button
-                      key={k.id}
-                      type="button"
-                      aria-label={`${KEY_PITCH_MAP[k.id]?.label ?? k.label}，${active ? '按下' : '开放'}`}
-                      aria-pressed={exploreMode ? active : undefined}
-                      onClick={() => handleSchematicKey(k.id)}
-                      className={cn(
-                        'absolute flex cursor-pointer items-center justify-center p-0 transition-[background-color,border-color,transform] outline-none hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                        k.shape === 'hole' ? 'rounded-full text-base' : k.shape === 'pill' ? 'rounded-full text-[10px]' : 'rounded-md text-[10px]',
-                        k.id === 'key_octave' && 'font-mono',
-                        active
-                          ? 'border-2 border-brand-strong bg-brand font-bold text-brand-foreground'
-                          : cn('border-[1.5px] border-muted-foreground/30 bg-card text-muted-foreground', k.shape === 'hole' ? 'font-semibold' : 'font-medium')
-                      )}
-                      style={{ left: k.x, top: k.y, width: k.w, height: k.h }}
+            <div className="mx-auto shrink-0 rounded-lg border bg-muted/40 px-3 py-4 sm:px-5 lg:py-3">
+              <div
+                ref={schematicRef}
+                data-schematic
+                className="relative"
+                style={{ width: SCHEMATIC_W * schematicScale, height: SCHEMATIC_H * schematicScale }}
+              >
+                <div
+                  className="absolute top-0 left-0 origin-top-left"
+                  style={{ width: SCHEMATIC_W, height: SCHEMATIC_H, transform: `scale(${schematicScale})` }}
+                >
+                  <div className="absolute top-24 left-[149px] h-96 w-0.5 bg-border" />
+                  <div className="absolute top-[300px] left-10 w-[220px] border-t border-dashed border-muted-foreground/30" />
+                  {SCHEMATIC_SECTIONS.map((sec) => (
+                    <span
+                      key={sec.label}
+                      className="absolute left-0 text-[11px] font-medium text-muted-foreground"
+                      style={{ top: sec.y }}
                     >
-                      {k.label}
-                    </button>
-                  );
-                })}
+                      {sec.label}
+                    </span>
+                  ))}
+                  {SCHEMATIC_KEYS.map((k) => {
+                    const active = schematicKeys.includes(k.id);
+                    return (
+                      <button
+                        key={k.id}
+                        type="button"
+                        aria-label={`${KEY_PITCH_MAP[k.id]?.label ?? k.label}，${active ? '按下' : '开放'}`}
+                        aria-pressed={exploreMode ? active : undefined}
+                        onClick={() => handleSchematicKey(k.id)}
+                        className={cn(
+                          'absolute flex cursor-pointer items-center justify-center p-0 transition-[background-color,border-color,transform] outline-none hover:scale-105 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                          k.shape === 'hole' ? 'rounded-full text-base' : k.shape === 'pill' ? 'rounded-full text-[10px]' : 'rounded-md text-[10px]',
+                          k.id === 'key_octave' && 'font-mono',
+                          active
+                            ? 'border-2 border-brand-strong bg-brand font-bold text-brand-foreground'
+                            : cn('border-[1.5px] border-muted-foreground/30 bg-card text-muted-foreground', k.shape === 'hole' ? 'font-semibold' : 'font-medium')
+                        )}
+                        style={{ left: k.x, top: k.y, width: k.w, height: k.h }}
+                      >
+                        {k.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
