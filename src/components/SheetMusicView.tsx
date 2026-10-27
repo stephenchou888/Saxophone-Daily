@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Maximize2, Minimize2, ZoomIn, ZoomOut, Eye, Sparkles, Hash } from 'lucide-react';
+import { Maximize2, Minimize2, ZoomIn, ZoomOut, Sparkles, Hash } from 'lucide-react';
 import { ScaleDefinition } from '../types/music';
-import { scaleDisplayName } from '@/lib/dailyScale';
 import { notesToAbcMeasures } from '@/lib/abcNotes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,8 +18,6 @@ interface SheetMusicViewProps {
   onNoteClick?: (index: number) => void;
   /** 每小节拍数（四分音符），默认 4；模进练习按组形设置，让每组落在整小节里 */
   beatsPerMeasure?: number;
-  /** 谱面标题，默认“<调名> 视奏练习” */
-  title?: string;
 }
 
 // 单行模式下每个音至少占的谱面宽度（abcjs 未缩放单位），音很多的模进练习据此加宽并横向滚动
@@ -32,7 +29,6 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   currentNoteIndex,
   onNoteClick,
   beatsPerMeasure = 4,
-  title,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollWrapperRef = useRef<HTMLDivElement>(null);
@@ -44,8 +40,9 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   const [scaleFactor, setScaleFactor] = useState<number>(() => (window.innerWidth < 640 ? 1.0 : 1.25));
   // 提示升降号开关 (Default: true，在音符上直接绘制 #/b 升降号标记)
   const [showAccidentals, setShowAccidentals] = useState<boolean>(true);
-  // 音名唱名显示开关 (Default: true，在音符下方标注音名如 C#, F#, G#)
-  const [showNoteNames, setShowNoteNames] = useState<boolean>(true);
+  // 音名唱名显示开关：在音符下方标注音名如 C#, F#, G#。
+  // 桌面端谱面下方已有音名按钮行，默认不重复标注以压低谱面高度；手机端隐藏了音名按钮行，默认开启
+  const [showNoteNames, setShowNoteNames] = useState<boolean>(() => window.innerWidth < 1024);
 
   // 计算本调需要升降的特征音符列表
   const alteredNotes = useMemo(() => {
@@ -73,7 +70,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       // 按调号与小节内临时记号规则写出升降号 / 还原号（见 lib/abcNotes）
       const { measures, words } = notesToAbcMeasures(scale.notes, keySig, beatsPerMeasure, showAccidentals);
 
-      const header = `X:1\nT:${title ?? `${scaleDisplayName(scale)} 视奏练习`}\nM:${beatsPerMeasure}/4\nL:1/4\nK:${keySig}`;
+      // 不写 T: 标题行：卡片标题已显示调名与练习模式，省下的高度留给首屏的指法图
+      const header = `X:1\nM:${beatsPerMeasure}/4\nL:1/4\nK:${keySig}`;
 
       if (layoutMode === 'single-line') {
         const musicLine = measures.join(' | ') + ' |]';
@@ -109,7 +107,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       return `${headerLines.join('\n')}\n${musicLines.join(' ')}`;
     }
     return baseAbc;
-  }, [scale, abcNotation, layoutMode, showAccidentals, showNoteNames, beatsPerMeasure, title]);
+  }, [scale, abcNotation, layoutMode, showAccidentals, showNoteNames, beatsPerMeasure]);
 
   // 每次渲染完成后递增，驱动下方的当前音高亮（渲染是异步的）
   const [renderTick, setRenderTick] = useState(0);
@@ -158,8 +156,8 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
           // 单行模式下强制拉满整行，避免容器变宽后谱面只占左侧一部分
           format: layoutMode === 'single-line' ? { stretchlast: true } : undefined,
           add_classes: true,
-          paddingtop: 16,
-          paddingbottom: 16,
+          paddingtop: 8,
+          paddingbottom: 8,
           paddingleft: 18,
           paddingright: 18,
         });
@@ -235,9 +233,19 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
     <div className="relative w-full overflow-hidden rounded-lg border bg-card">
       {/* 顶部控制栏：升降号标记、音名显示、单双行切换、缩放 */}
       <div className="flex items-center justify-between gap-3 overflow-x-auto border-b bg-muted/40 px-3 py-1.5 sm:flex-wrap sm:px-4 sm:py-2">
-        <div className="hidden shrink-0 items-center gap-2 sm:flex">
-          <span className="size-2 rounded-full bg-brand" />
-          <span className="text-xs font-medium text-muted-foreground">本位移调记谱 · 视谱即吹</span>
+        {/* 升降号指引并入工具栏，省掉单独一行；手机端工具栏放不下，靠谱面上的升降号标注 */}
+        <div className="hidden shrink-0 items-center gap-1.5 sm:flex" title="本调必须升降的音符（已在音符上直接标注）">
+          <Sparkles className="size-3.5 text-brand" />
+          <span className="text-xs font-medium text-muted-foreground">本调升降:</span>
+          {alteredNotes.length > 0 ? (
+            alteredNotes.map((note) => (
+              <Badge key={note} variant="soft" className="font-mono font-semibold">
+                {note}
+              </Badge>
+            ))
+          ) : (
+            <Badge variant="success">全本位自然音</Badge>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-x-4 gap-y-2 sm:flex-wrap">
@@ -296,34 +304,10 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         </div>
       </div>
 
-      {/* 调性升降号特征快速指引条（让初学者一目了然需要升降哪些音） */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto border-b px-3 py-1.5 text-xs sm:px-4">
-        <div className="flex shrink-0 items-center gap-2 sm:flex-wrap">
-          <span className="flex shrink-0 items-center gap-1 font-medium text-muted-foreground">
-            <Sparkles className="size-3.5 text-brand" />
-            <span className="sm:hidden">本调升降:</span>
-            <span className="max-sm:hidden">本调必须升降的音符（已在音符上直接标注）:</span>
-          </span>
-          {alteredNotes.length > 0 ? (
-            alteredNotes.map((note) => (
-              <Badge key={note} variant="soft" className="font-mono font-semibold">
-                {note}
-              </Badge>
-            ))
-          ) : (
-            <Badge variant="success">全本位自然音（无升降号，全部按自然键位吹奏）</Badge>
-          )}
-        </div>
-
-        <span className="hidden items-center gap-1 text-[11px] font-medium text-muted-foreground md:inline-flex">
-          <Eye className="size-3" /> 点击谱上任意音符即可切音视奏与发声
-        </span>
-      </div>
-
       {/* 五线谱渲染区域 */}
       <div
         ref={scrollWrapperRef}
-        className="w-full overflow-x-auto min-h-[96px] sm:min-h-[120px] p-1 sm:px-3 sm:py-1 text-center select-none bg-white text-slate-900 scroll-smooth"
+        className="w-full overflow-x-auto min-h-[96px] sm:min-h-[120px] lg:min-h-[80px] p-1 sm:px-3 sm:py-1 text-center select-none bg-white text-slate-900 scroll-smooth"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <div

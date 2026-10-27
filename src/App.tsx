@@ -259,7 +259,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background pb-24 text-foreground touch-manipulation lg:pb-0">
       {/* ===================== App Bar: Logo + Instrument ===================== */}
-      <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
+      <header data-fit-reserve="top" className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex min-h-14 max-w-[1280px] items-center justify-between gap-3 px-4 sm:px-8">
           <div className="flex items-center gap-2">
             <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -311,20 +311,25 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pt-4 sm:px-8">
+      <main className="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pt-4 sm:px-8 lg:gap-3 lg:pt-3">
         {/* ===================== Today's Scale ===================== */}
         <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 space-y-2">
-            <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+          {/* 桌面端压成一行：音阶名 + 标签 + 日期，把高度留给下方练习主区 */}
+          <div className="min-w-0 space-y-2 lg:flex lg:flex-wrap lg:items-center lg:gap-x-3 lg:gap-y-1 lg:space-y-0">
+            <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground lg:hidden">
               <Calendar className="size-3.5" />
               {todayDateStr} · 今日主修
             </div>
-            <h1 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">{scaleDisplayName(currentScale)}</h1>
+            <h1 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl lg:text-2xl">{scaleDisplayName(currentScale)}</h1>
             <div className="flex flex-wrap items-center gap-1.5">
               {currentScale.category && <Badge variant="secondary">{CATEGORY_LABEL[currentScale.category]}</Badge>}
               <Badge variant="outline" className="text-muted-foreground">
                 {currentScale.keySig}
               </Badge>
+              <span className="ml-1 hidden items-center gap-1.5 text-[13px] text-muted-foreground lg:inline-flex">
+                <Calendar className="size-3.5" />
+                {todayDateStr} · 今日主修
+              </span>
             </div>
           </div>
 
@@ -345,57 +350,65 @@ export default function App() {
         </section>
 
         {/* ===================== Sheet Music + Note Strip ===================== */}
-        <Card className="gap-3 py-3 sm:py-5">
-          <CardContent className="space-y-3 px-3 sm:space-y-4 sm:px-6">
-            <div className="flex items-center justify-between gap-3 sm:items-start">
-              <div className="flex min-w-0 items-baseline gap-2 sm:block">
-                <h2 className="text-base font-semibold whitespace-nowrap">
-                  五线谱视奏
-                  {activePattern !== 'scale' && <span className="text-muted-foreground max-sm:hidden"> · {patternInfo.title}</span>}
-                </h2>
-                <p className="text-xs text-muted-foreground sm:text-[13px]">
-                  <span className="sm:hidden">左右滑动查看</span>
-                  <span className="max-sm:hidden">
-                    按 {saxType === 'alto' ? 'E♭ 中音' : 'B♭ 高音'}萨克斯移调记谱，视谱即吹 · 点击音符跳转
-                  </span>
+        {/* 手机 / 平板端谱面吸顶：滚到指法图后仍能看谱，配合底部控制条完成 看谱 → 看指法 → 下一个音。
+            视口太矮（如 375×667）时吸顶会占去半屏，改为随页面滚动 */}
+        <Card
+          data-fit-reserve="top"
+          className="top-14 z-20 gap-3 py-3 sm:py-5 lg:py-4 max-lg:[@media(min-height:700px)]:sticky max-lg:[@media(min-height:700px)]:shadow-md"
+        >
+          <CardContent className="flex flex-col gap-3 px-3 sm:gap-4 sm:px-6 lg:gap-3">
+            {/* 桌面端标题、练习模式、进度并成一行（lg:contents 摊平标题行，再用 order 排序） */}
+            <div className="space-y-3 sm:space-y-4 lg:flex lg:items-center lg:gap-4 lg:space-y-0">
+              <div className="flex items-center justify-between gap-3 sm:items-start lg:contents">
+                <div className="flex min-w-0 items-baseline gap-2 sm:block lg:order-1 lg:shrink-0">
+                  <h2 className="text-base font-semibold whitespace-nowrap">
+                    五线谱视奏
+                    {activePattern !== 'scale' && <span className="text-muted-foreground max-sm:hidden"> · {patternInfo.title}</span>}
+                  </h2>
+                  <p className="text-xs text-muted-foreground sm:text-[13px] lg:hidden">
+                    <span className="sm:hidden">左右滑动查看</span>
+                    <span className="max-sm:hidden">
+                      按 {saxType === 'alto' ? 'E♭ 中音' : 'B♭ 高音'}萨克斯移调记谱，视谱即吹 · 点击音符跳转
+                    </span>
+                  </p>
+                </div>
+                <div className="shrink-0 text-xs text-muted-foreground sm:text-sm lg:order-3">
+                  第 <span className="font-mono font-semibold text-foreground">{currentNoteIndex + 1} / {practiceNotes.length}</span> 音
+                </div>
+              </div>
+
+              {/* 练习模式：音阶 / 大小调模进 */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 lg:order-2 lg:min-w-0 lg:flex-1">
+                <div className="-mx-1 overflow-x-auto px-1 lg:shrink-0">
+                  <ToggleGroup
+                    type="single"
+                    variant="pill"
+                    size="sm"
+                    aria-label="练习模式"
+                    value={activePattern}
+                    onValueChange={(v) => v && handlePatternChange(v as PracticePattern)}
+                  >
+                    {PRACTICE_PATTERNS.map((p) => (
+                      <ToggleGroupItem
+                        key={p.id}
+                        value={p.id}
+                        disabled={p.id !== 'scale' && !sequencesAvailable}
+                        title={p.id !== 'scale' && !sequencesAvailable ? '模进练习只适用于大调与小调' : p.title}
+                        className="h-7 px-3 text-[13px] font-medium"
+                      >
+                        {p.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+                <p className="hidden min-w-0 text-xs text-muted-foreground sm:block lg:truncate">
+                  {sequencesAvailable
+                    ? patternInfo.description
+                    : `模进练习（${PRACTICE_PATTERNS.filter((p) => p.id !== 'scale')
+                        .map((p) => p.label)
+                        .join('、')}）适用于大调与小调，特色音阶请按原音阶练习。`}
                 </p>
               </div>
-              <div className="shrink-0 text-xs text-muted-foreground sm:text-sm">
-                第 <span className="font-mono font-semibold text-foreground">{currentNoteIndex + 1} / {practiceNotes.length}</span> 音
-              </div>
-            </div>
-
-            {/* 练习模式：音阶 / 大小调模进 */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-              <div className="-mx-1 overflow-x-auto px-1">
-                <ToggleGroup
-                  type="single"
-                  variant="pill"
-                  size="sm"
-                  aria-label="练习模式"
-                  value={activePattern}
-                  onValueChange={(v) => v && handlePatternChange(v as PracticePattern)}
-                >
-                  {PRACTICE_PATTERNS.map((p) => (
-                    <ToggleGroupItem
-                      key={p.id}
-                      value={p.id}
-                      disabled={p.id !== 'scale' && !sequencesAvailable}
-                      title={p.id !== 'scale' && !sequencesAvailable ? '模进练习只适用于大调与小调' : p.title}
-                      className="h-7 px-3 text-[13px] font-medium"
-                    >
-                      {p.label}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </div>
-              <p className="min-w-0 text-xs text-muted-foreground">
-                {sequencesAvailable
-                  ? patternInfo.description
-                  : `模进练习（${PRACTICE_PATTERNS.filter((p) => p.id !== 'scale')
-                      .map((p) => p.label)
-                      .join('、')}）适用于大调与小调，特色音阶请按原音阶练习。`}
-              </p>
             </div>
 
             <SheetMusicView
@@ -404,15 +417,15 @@ export default function App() {
               currentNoteIndex={currentNoteIndex}
               onNoteClick={handleSelectNoteIndex}
               beatsPerMeasure={patternInfo.beatsPerMeasure}
-              title={`${scaleDisplayName(currentScale)} ${activePattern === 'scale' ? '视奏练习' : patternInfo.title}`}
             />
 
-            {/* 音名按钮：已练过的灰掉，当前音高亮，点击跳转。音较少时桌面端换行显示，模进等长序列改为单行横向滚动 */}
+            {/* 音名按钮：已练过的灰掉，当前音高亮，点击跳转。音较少时桌面端换行显示，模进等长序列改为单行横向滚动。
+                手机与平板端（吸顶谱面）隐藏以压低高度（谱上音符可直接点，上一个 / 下一个在底部控制条） */}
             <div
               ref={noteStripRef}
               className={cn(
-                'relative -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1',
-                practiceNotes.length <= 24 && 'sm:flex-wrap sm:overflow-visible sm:pb-0'
+                'relative -mx-1 hidden gap-1.5 overflow-x-auto px-1 pb-1 lg:flex',
+                practiceNotes.length <= 24 && 'lg:flex-wrap lg:overflow-visible lg:pb-0'
               )}
             >
               {practiceNotes.map((n, idx) => (
@@ -537,7 +550,7 @@ export default function App() {
           </Card>
 
           {/* ===================== Fingering Diagram Card ===================== */}
-          <Card className="py-4 sm:py-5 lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1">
+          <Card className="py-4 sm:py-5 lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:py-4">
             <CardContent className="flex flex-col items-center justify-center px-3 sm:px-6">
               <SaxophoneDiagram
                 activeKeys={currentFingering.keys}
@@ -580,6 +593,7 @@ export default function App() {
       {/* ===================== Mobile Bottom Control Bar ===================== */}
       <nav
         aria-label="演奏控制"
+        data-fit-reserve="bottom"
         className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t bg-background/95 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] backdrop-blur lg:hidden"
       >
         <Button variant="outline" size="icon" className="size-11" aria-label="上一个音" onClick={handlePrevNote}>
