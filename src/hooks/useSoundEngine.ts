@@ -507,7 +507,9 @@ export function useSoundEngine() {
           actualFreq * (register === 'altissimo' ? 0.012 : 0.007),
           now + 0.14
         );
-        vibrato.connect(reedOsc.frequency);
+        // LFO 经过 vibratoGain 设定深度后再调制频率（直接相连只有 ±1 Hz，渐入包络也不起作用）
+        vibrato.connect(vibratoGain);
+        vibratoGain.connect(reedOsc.frequency);
         vibrato.start(now);
         vibrato.stop(now + duration);
 

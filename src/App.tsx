@@ -82,7 +82,7 @@ export default function App() {
     setTodayDateStr(now.toLocaleDateString('zh-CN', dateOpts));
   }, []);
 
-  // 练习模式：音阶或大小调模进（三度 / 三音组 / 四音组 / 琶音）；特色音阶只提供音阶本身
+  // 练习模式：音阶或大小调模进（见 PRACTICE_PATTERNS）；特色音阶只提供音阶本身
   const [pattern, setPattern] = useState<PracticePattern>('scale');
   const sequencesAvailable = supportsSequences(currentScale);
   const activePattern: PracticePattern = sequencesAvailable ? pattern : 'scale';
@@ -243,6 +243,7 @@ export default function App() {
     const found = SCALES.find((s) => s.id === scaleId);
     if (found) {
       setIsAutoPlaying(false);
+      demoPendingStartRef.current = false;
       setCurrentScale(found);
       setCurrentNoteIndex(0);
     }
@@ -390,7 +391,9 @@ export default function App() {
               <p className="min-w-0 text-xs text-muted-foreground">
                 {sequencesAvailable
                   ? patternInfo.description
-                  : '模进练习（三度、三音组、四音组、琶音）适用于大调与小调，特色音阶请按原音阶练习。'}
+                  : `模进练习（${PRACTICE_PATTERNS.filter((p) => p.id !== 'scale')
+                      .map((p) => p.label)
+                      .join('、')}）适用于大调与小调，特色音阶请按原音阶练习。`}
               </p>
             </div>
 

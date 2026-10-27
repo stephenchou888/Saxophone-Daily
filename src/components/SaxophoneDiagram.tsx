@@ -261,7 +261,9 @@ export const SaxophoneDiagram: React.FC<SaxophoneDiagramProps> = ({
       let activeReg = customRegister || register;
       if (keyId === 'key_octave') {
         activeReg = register === 'low' ? 'high' : register;
-      } else if (keyId === 'key_front_f') {
+      } else if (keyId === 'key_front_f' || keyId.startsWith('key_palm')) {
+        // 前 F 与掌键只用于高音区（掌键 D6/E♭6/F6）：低音区下自动按超吹音区发声，
+        // 与实拍照标注、当前音符卡对掌键音的分类保持一致
         activeReg = register === 'low' ? 'altissimo' : register;
       }
 
