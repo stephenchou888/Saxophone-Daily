@@ -167,7 +167,12 @@ export const TranspositionChart: React.FC<TranspositionChartProps> = ({ saxType,
           className={cn(keyFill(k), 'stroke-zinc-400 transition-colors dark:stroke-zinc-600')}
         />
         {!k.black && k.midi % 12 === 0 && (
-          <text x={k.cx} y={PIANO_TOP + WHITE_H - 8} textAnchor="middle" className="fill-zinc-500 text-[9px] font-medium">
+          <text
+            x={k.cx}
+            y={PIANO_TOP + WHITE_H - 8}
+            textAnchor="middle"
+            className={cn('pointer-events-none text-[9px] font-medium', k === altoKey || k === sopKey ? 'fill-zinc-900' : 'fill-zinc-500')}
+          >
             {k.midi === 60 ? '中央C' : name}
           </text>
         )}
@@ -184,7 +189,20 @@ export const TranspositionChart: React.FC<TranspositionChartProps> = ({ saxType,
       const active = k === activeKey;
       const label = active ? formatNote(shown) : midiToName(k.midi - shift);
       return (
-        <g key={`${sax}-${k.midi}`} className="cursor-pointer" onClick={() => onStripClick(k.midi, sax)}>
+        <g
+          key={`${sax}-${k.midi}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`${SAX_LABEL[sax]}记谱 ${midiToName(k.midi - shift)}（钢琴 ${midiToName(k.midi)}），点击选中并试听`}
+          className="cursor-pointer outline-none [&:focus-visible>rect]:stroke-ring [&:focus-visible>rect]:stroke-2"
+          onClick={() => onStripClick(k.midi, sax)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onStripClick(k.midi, sax);
+            }
+          }}
+        >
           <title>{`钢琴 ${midiToName(k.midi)} = ${SAX_LABEL[sax]}谱上的 ${midiToName(k.midi - shift)}`}</title>
           <rect
             x={k.cx - 14}
