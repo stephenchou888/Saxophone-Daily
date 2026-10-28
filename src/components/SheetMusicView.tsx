@@ -24,7 +24,7 @@ interface SheetMusicViewProps {
 
 // 单行模式下每个音至少占的谱面宽度（abcjs 未缩放单位），音很多的模进练习据此加宽并横向滚动
 const MIN_NOTE_WIDTH = 34;
-// 全屏专注看谱时在当前缩放基础上再放大的倍数
+// 放大窗口看谱时在当前缩放基础上再放大的倍数
 const FOCUS_ZOOM = 1.6;
 
 export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
@@ -37,40 +37,18 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollWrapperRef = useRef<HTMLDivElement>(null);
 
-  // 专注看谱：谱面以浮层铺满视口（挂到 body 上，避免被吸顶卡片的层级困住、被顶栏和底部控制条盖住），
-  // 同时请求整页原生全屏隐藏浏览器界面；不支持原生全屏时（如 iPhone Safari）只用浮层
+  // 放大窗口：在页面中央弹出一个放大的五线谱窗口（挂到 body 上，避免被吸顶卡片的层级困住），
+  // 背后页面加半透明遮罩，点遮罩或按 Esc 关闭
   const [focusMode, setFocusMode] = useState(false);
-  const nativeFullscreenRef = useRef(false);
-
-  const enterFocus = () => {
-    setFocusMode(true);
-    const el = document.documentElement;
-    if (el.requestFullscreen) {
-      el.requestFullscreen()
-        .then(() => (nativeFullscreenRef.current = true))
-        .catch(() => (nativeFullscreenRef.current = false));
-    }
-  };
-
-  const exitFocus = () => {
-    setFocusMode(false);
-    if (nativeFullscreenRef.current && document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    nativeFullscreenRef.current = false;
-  };
+  const enterFocus = () => setFocusMode(true);
+  const exitFocus = () => setFocusMode(false);
 
   useEffect(() => {
     if (!focusMode) return;
-    // 用户按 Esc / 系统手势退出原生全屏时，同步退出专注模式
-    const onFullscreenChange = () => {
-      if (!document.fullscreenElement && nativeFullscreenRef.current) {
-        nativeFullscreenRef.current = false;
-        setFocusMode(false);
-      }
-    };
-    // Esc 退出（原生全屏下浏览器自己处理 Esc，会走上面的 fullscreenchange）；← / → 逐音切换，不用离开谱面
+    // Esc 退出；← / → 逐音切换，不用离开谱面
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        exitFocus();
+        setFocusMode(false);
         return;
       }
       if (!onNoteClick) return;
@@ -85,11 +63,9 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
     };
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    document.addEventListener('fullscreenchange', onFullscreenChange);
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = prevOverflow;
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [focusMode, onNoteClick, currentNoteIndex, scale.notes.length]);
@@ -188,7 +164,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
       observer.disconnect();
       window.clearTimeout(timer);
     };
-  }, [focusMode]); // 进出全屏时谱面容器会重新挂载，需重新监听
+  }, [focusMode]); // 打开 / 关闭放大窗口时谱面容器会重新挂载，需重新监听
 
   // 渲染乐谱（ABCjs 矢量 SVG）
   useEffect(() => {
@@ -204,7 +180,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         // 不清掉会在多次重绘间累积，导致谱面下方出现大片空白
         el.removeAttribute('style');
         const containerWidth = scrollWrapperRef.current?.clientWidth || 900;
-        // 全屏专注：放大谱面，按实际尺寸渲染。单行至少铺满一屏、音多时横向滚动并自动跟随当前音；双行按屏宽折行
+        // 放大窗口：放大谱面，按实际尺寸渲染。单行至少铺满窗口、音多时横向滚动并自动跟随当前音；双行按窗口宽度折行
         const renderScale = focusMode ? scaleFactor * FOCUS_ZOOM : scaleFactor;
         // （abcjs 的 staffwidth 是缩放后的像素宽度，音符本身随 scale 放大）
         const targetStaffWidth = focusMode
@@ -302,10 +278,10 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
     <div
       className={cn(
         'relative w-full overflow-hidden rounded-lg border bg-card',
-        focusMode && 'fixed inset-0 z-50 flex flex-col rounded-none border-0'
+        focusMode && 'flex max-h-[90vh] w-[min(96vw,1400px)] flex-col rounded-xl shadow-2xl'
       )}
     >
-      {/* 顶部控制栏：升降号标记、音名显示、单双行切换、缩放；全屏按钮固定在最右，不随工具栏横向滚动 */}
+      {/* 顶部控制栏：升降号标记、音名显示、单双行切换、缩放；放大按钮固定在最右，不随工具栏横向滚动 */}
       <div className="flex items-center border-b bg-muted/40">
         <div className="flex min-w-0 flex-1 items-center justify-between gap-3 overflow-x-auto px-3 py-1.5 sm:flex-wrap sm:px-4 sm:py-2">
           {/* 升降号指引并入工具栏，省掉单独一行；手机端工具栏放不下，靠谱面上的升降号标注 */}
@@ -385,11 +361,11 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
             size="sm"
             className="h-7 px-2.5 text-xs"
             onClick={focusMode ? exitFocus : enterFocus}
-            title={focusMode ? '退出全屏（Esc）' : '全屏专注看谱（← / → 切换音符，Esc 退出）'}
-            aria-label={focusMode ? '退出全屏' : '全屏专注看谱'}
+            title={focusMode ? '关闭放大窗口（Esc）' : '放大窗口看谱（← / → 切换音符，Esc 关闭）'}
+            aria-label={focusMode ? '关闭放大窗口' : '放大窗口看谱'}
           >
             {focusMode ? <Shrink className="size-3.5" /> : <Expand className="size-3.5" />}
-            <span className="max-sm:hidden">{focusMode ? '退出全屏' : '全屏'}</span>
+            <span className="max-sm:hidden">{focusMode ? '关闭' : '放大'}</span>
           </Button>
         </div>
       </div>
@@ -399,7 +375,7 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         ref={scrollWrapperRef}
         className={cn(
           'w-full overflow-x-auto min-h-[96px] sm:min-h-[120px] lg:min-h-[80px] p-1 sm:px-3 sm:py-1 text-center select-none bg-white text-slate-900 scroll-smooth',
-          focusMode && 'flex min-h-0 flex-1 flex-col justify-center overflow-y-auto'
+          focusMode && 'flex min-h-[40vh] flex-1 flex-col justify-center overflow-y-auto'
         )}
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
@@ -416,11 +392,23 @@ export const SheetMusicView: React.FC<SheetMusicViewProps> = ({
         <div className="flex h-9 shrink-0 items-center justify-center gap-1.5 border-t bg-muted/40 text-xs text-muted-foreground max-sm:hidden">
           <kbd className="rounded border bg-background px-1 font-mono text-[11px]">←</kbd>
           <kbd className="rounded border bg-background px-1 font-mono text-[11px]">→</kbd>切换音符
-          <kbd className="ml-2 rounded border bg-background px-1 font-mono text-[11px]">Esc</kbd>退出全屏
+          <kbd className="ml-2 rounded border bg-background px-1 font-mono text-[11px]">Esc</kbd>关闭
         </div>
       )}
     </div>
   );
 
-  return focusMode ? createPortal(view, document.body) : view;
+  if (!focusMode) return view;
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="放大查看五线谱"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-6"
+      onClick={(e) => e.target === e.currentTarget && exitFocus()}
+    >
+      {view}
+    </div>,
+    document.body
+  );
 };
