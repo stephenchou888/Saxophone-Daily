@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { SaxophoneType, ScaleDefinition } from './types/music';
-import { SCALES, FINGERINGS, KEY_NAME_MAP } from './data/scales';
+import { SaxophoneType, ScaleDefinition, ScaleTrack } from './types/music';
+import { FINGERINGS, KEY_NAME_MAP } from './data/scales';
 import { NOTE_TIPS } from './data/noteTips';
 import { useSoundEngine, useAudioMuted, getSaxSoundingPitch } from './hooks/useSoundEngine';
 import { SaxophoneDiagram } from './components/SaxophoneDiagram';
@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from './hooks/useTheme';
 import { useBeatClock } from './hooks/useBeatClock';
-import { getTodayScale, scaleDisplayName } from './lib/dailyScale';
+import { ALL_SCALES, getTodayScale, scaleDisplayName, scaleTrack } from './lib/dailyScale';
 import { buildPracticeNotes, PRACTICE_PATTERNS, PracticePattern, supportsSequences } from './lib/sequences';
 import { ScalePicker } from './components/ScalePicker';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,9 @@ const CATEGORY_LABEL: Record<NonNullable<ScaleDefinition['category']>, string> =
   major: '自然大调',
   minor: '自然小调',
   harmonic_minor: '和声小调',
+  jazz_mode: '爵士 · 教会调式',
+  jazz_scale: '爵士 · 常用音阶',
+  jazz_arpeggio: '爵士 · 和弦琶音',
 };
 
 // 显示用音名：F#4 → F♯4，Bb4 → B♭4
@@ -50,8 +53,11 @@ const prettyNote = (n: string) => n.replace('#', '♯').replace(/^([A-G])b/, '$1
 export default function App() {
   const [saxType, setSaxType] = useState<SaxophoneType>('alto');
   // 今日推荐调性在页面加载时确定（#15）
-  const [todayScale] = useState(() => getTodayScale());
-  const [currentScale, setCurrentScale] = useState(todayScale);
+  // 训练轨道：基础调式与爵士调式各自每日轮换一条主修音阶
+  const [track, setTrack] = useState<ScaleTrack>('basic');
+  const [todayScales] = useState(() => ({ basic: getTodayScale(new Date(), 'basic'), jazz: getTodayScale(new Date(), 'jazz') }));
+  const todayScale = todayScales[track];
+  const [currentScale, setCurrentScale] = useState(todayScales.basic);
   const [currentNoteIndex, setCurrentNoteIndex] = useState<number>(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(false);
   const [demoLoop, setDemoLoop] = useState<boolean>(true);
@@ -83,7 +89,7 @@ export default function App() {
     setTodayDateStr(now.toLocaleDateString('zh-CN', dateOpts));
   }, []);
 
-  // 练习模式：音阶或大小调模进（见 PRACTICE_PATTERNS）；特色音阶只提供音阶本身
+  // 练习模式：音阶或大小调 / 教会调式模进（见 PRACTICE_PATTERNS）；特色音阶与爵士音阶只提供音阶本身
   const [pattern, setPattern] = useState<PracticePattern>('scale');
   const sequencesAvailable = supportsSequences(currentScale);
   const activePattern: PracticePattern = sequencesAvailable ? pattern : 'scale';
@@ -241,13 +247,19 @@ export default function App() {
   };
 
   const handleScaleChange = (scaleId: string) => {
-    const found = SCALES.find((s) => s.id === scaleId);
+    const found = ALL_SCALES.find((s) => s.id === scaleId);
     if (found) {
       setIsAutoPlaying(false);
       demoPendingStartRef.current = false;
       setCurrentScale(found);
+      setTrack(scaleTrack(found));
       setCurrentNoteIndex(0);
     }
+  };
+
+  // 切换训练轨道：直接进入该轨道的今日推荐
+  const handleTrackChange = (next: ScaleTrack) => {
+    if (next !== track) handleScaleChange(todayScales[next].id);
   };
 
   const transposeLabel = saxType === 'alto' ? '低大六度' : '低大二度';
@@ -323,6 +335,11 @@ export default function App() {
             <h1 className="text-2xl leading-tight font-semibold tracking-tight sm:text-3xl lg:text-2xl">{scaleDisplayName(currentScale)}</h1>
             <div className="flex flex-wrap items-center gap-1.5">
               {currentScale.category && <Badge variant="secondary">{CATEGORY_LABEL[currentScale.category]}</Badge>}
+              {currentScale.chord && (
+                <Badge variant="outline" className="font-mono" title="适用和弦">
+                  {currentScale.chord}
+                </Badge>
+              )}
               <Badge variant="outline" className="text-muted-foreground">
                 {currentScale.keySig}
               </Badge>
@@ -334,6 +351,23 @@ export default function App() {
           </div>
 
           <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
+            {/* 训练轨道：基础调式（大小调与特色音阶） / 爵士调式（教会调式、爵士音阶、ii–V–I 琶音） */}
+            <ToggleGroup
+              type="single"
+              variant="pill"
+              size="sm"
+              value={track}
+              onValueChange={(v) => v && handleTrackChange(v as ScaleTrack)}
+              aria-label="选择训练类型"
+              className="h-9 shrink-0"
+            >
+              <ToggleGroupItem value="basic" className="px-2.5 text-[13px] font-medium sm:px-3" title="基础调式：大小调、和声小调与特色音阶">
+                <span className="sm:hidden">基础</span><span className="max-sm:hidden">基础调式</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="jazz" className="px-2.5 text-[13px] font-medium sm:px-3" title="爵士调式：教会调式、爵士常用音阶与 ii–V–I 琶音">
+                <span className="sm:hidden">爵士</span><span className="max-sm:hidden">爵士调式</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
             <Button
               variant="outline"
               className="shrink-0 bg-card text-muted-foreground"
@@ -345,7 +379,7 @@ export default function App() {
               <RotateCcw />
               <span className="max-sm:hidden">{currentScale.id === todayScale.id ? '已是今日推荐' : '今日推荐'}</span>
             </Button>
-            <ScalePicker value={currentScale} onChange={handleScaleChange} />
+            <ScalePicker track={track} value={currentScale} onChange={handleScaleChange} />
           </div>
         </section>
 
@@ -393,7 +427,7 @@ export default function App() {
                         key={p.id}
                         value={p.id}
                         disabled={p.id !== 'scale' && !sequencesAvailable}
-                        title={p.id !== 'scale' && !sequencesAvailable ? '模进练习只适用于大调与小调' : p.title}
+                        title={p.id !== 'scale' && !sequencesAvailable ? '模进练习只适用于大小调与七种教会调式' : p.title}
                         className="h-7 px-3 text-[13px] font-medium"
                       >
                         {p.label}
@@ -406,7 +440,7 @@ export default function App() {
                     ? patternInfo.description
                     : `模进练习（${PRACTICE_PATTERNS.filter((p) => p.id !== 'scale')
                         .map((p) => p.label)
-                        .join('、')}）适用于大调与小调，特色音阶请按原音阶练习。`}
+                        .join('、')}）适用于大小调与七种教会调式，${track === 'jazz' ? '爵士音阶与琶音' : '特色音阶'}请按原音阶练习。`}
                 </p>
               </div>
             </div>
