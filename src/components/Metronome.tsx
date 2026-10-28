@@ -92,9 +92,10 @@ export const Metronome: React.FC<MetronomeProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2">
+        {/* 卡片较窄时开始按钮换到下一行，按钮宽度随卡片伸缩铺满（手机端紧凑行保持图标按钮） */}
+        <div className="flex flex-wrap items-center gap-2">
           <ToggleGroup
-            className="max-sm:hidden"
+            className="shrink-0 max-sm:hidden"
             type="single"
             variant="pill"
             size="sm"
@@ -111,6 +112,7 @@ export const Metronome: React.FC<MetronomeProps> = ({
 
           <Button
             variant={isPlaying ? 'destructive' : 'default'}
+            className="sm:min-w-20 sm:flex-1"
             onClick={onTogglePlay}
             aria-label={isPlaying ? '停止节拍' : '启动节拍'}
           >
