@@ -57,9 +57,14 @@ export const PRACTICE_PATTERNS: {
   },
 ];
 
-// 支持模进的分类：特色音阶（半音阶、五声、蓝调、超吹等）本身不是七声音阶，不做模进
+// 支持模进的分类：大小调与七种教会调式（七声音阶）；特色音阶、爵士八音 / 六音音阶与琶音进行不做模进
 export function supportsSequences(scale: ScaleDefinition): boolean {
-  return scale.category === 'major' || scale.category === 'minor' || scale.category === 'harmonic_minor';
+  return (
+    scale.category === 'major' ||
+    scale.category === 'minor' ||
+    scale.category === 'harmonic_minor' ||
+    scale.category === 'jazz_mode'
+  );
 }
 
 // 音阶的上行部分：从第一个音到最高音（数据格式为“上行 + 镜像下行”）
